@@ -428,10 +428,22 @@ type _effect_subpath_result = Expect<Equal<TaskResult<typeof viaFxEffectImport>,
 
 const runExit = fx.runExit(fx.ok(user));
 const runExitSync = fx.runExitSync(fx.ok(user));
+const runOrThrow = fx.runOrThrow(fx.ok(user) as Task<User, NotFound>);
+const runOrThrowSync = fx.runOrThrowSync(fx.ok(user));
+const runResult = fx.runResult(fx.fail(new NotFound("1")) as Task<User, NotFound>);
+const runResultSync = fx.runResultSync(fx.fail(new NotFound("1")) as Task<User, NotFound>);
 
 type _run_exit_result = Expect<
   Equal<Awaited<typeof runExit>, import("../src/effect").Exit.Exit<User, never>>
 >;
 type _run_exit_sync_result = Expect<
   Equal<typeof runExitSync, import("../src/effect").Exit.Exit<User, never>>
+>;
+type _run_or_throw_result = Expect<Equal<Awaited<typeof runOrThrow>, User>>;
+type _run_or_throw_sync_result = Expect<Equal<typeof runOrThrowSync, User>>;
+type _run_result_result = Expect<
+  Equal<Awaited<typeof runResult>, import("../src/index").Result<User, NotFound>>
+>;
+type _run_result_sync_result = Expect<
+  Equal<typeof runResultSync, import("../src/index").Result<User, NotFound>>
 >;

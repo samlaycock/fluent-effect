@@ -27,6 +27,7 @@ export type {
   ErrorInstances,
   ErrorsOf,
   FxError,
+  Result,
   Task,
   TaskDeps,
   TaskError,
@@ -111,9 +112,13 @@ export const fx = {
 
   // Execution
   run: runtime.run,
+  runOrThrow: runtime.runOrThrow,
+  runResult: runtime.runResult,
   runWith: runtime.runWith,
   app: runtime.app,
   runSync: runtime.runSync,
+  runOrThrowSync: runtime.runOrThrowSync,
+  runResultSync: runtime.runResultSync,
   runSafe: runtime.runSafe,
   runExit: runtime.runExit,
   runSafeSync: runtime.runSafeSync,

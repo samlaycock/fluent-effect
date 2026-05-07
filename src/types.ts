@@ -11,6 +11,16 @@ export type TaskError<T extends AnyTask> = Effect.Effect.Error<T>;
 /** Infer the requirements of a Task. */
 export type TaskDeps<T extends AnyTask> = Effect.Effect.Context<T>;
 
+export type Result<A, E> =
+  | {
+      readonly ok: true;
+      readonly value: A;
+    }
+  | {
+      readonly ok: false;
+      readonly error: E;
+    };
+
 export type FxError<Name extends string, Fields extends object = {}> = Readonly<Fields> & {
   readonly _tag: Name;
 };

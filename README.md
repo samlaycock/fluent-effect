@@ -167,12 +167,20 @@ fx.trace(task, "load-user", {
 
 ```ts
 fx.run(task);
+fx.runOrThrow(task);
+fx.runResult(task);
 fx.runWith(task, dependencies);
 
 const app = fx.app(dependencies);
 app.run(task);
+app.runOrThrow(task);
+app.runResult(task);
 app.runExit(task);
 ```
+
+Use `runOrThrow` at application boundaries when typed failures should be thrown
+as their original values. Use `runResult` when boundary code wants a plain
+JavaScript result object instead of native Effect `Either` or `Exit` values.
 
 ## Native Escape Hatch
 
@@ -237,6 +245,8 @@ fx.recoverFrom; // Effect.catchTag
 fx.timeoutFail; // Effect.timeoutFail
 fx.retryTimes; // Effect.retry + Schedule.recurs
 fx.retryBackoff; // Effect.retry + Schedule.exponential
+fx.runOrThrow; // run and throw the original typed failure value
+fx.runResult; // run and return a plain JavaScript Result value
 ```
 
 ## Source Layout

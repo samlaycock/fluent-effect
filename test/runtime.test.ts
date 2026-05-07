@@ -566,6 +566,40 @@ describe("fx runtime behavior", () => {
     expect(fx.run(fx.fail(AppError.Boom({ message: "bad" })))).rejects.toBeDefined();
   });
 
+  test("fx.runOrThrow throws the original typed failure", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const error = AppError.Boom({ message: "bad" });
+
+    expect(fx.runOrThrow(fx.fail(error))).rejects.toBe(error);
+  });
+
+  test("fx.runOrThrow returns successful task values", async () => {
+    const result = await fx.runOrThrow(fx.succeed("ok"));
+
+    expect(result).toBe("ok");
+  });
+
+  test("fx.runResult returns plain success and failure values", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const error = AppError.Boom({ message: "bad" });
+
+    const success = await fx.runResult(fx.succeed("ok"));
+    const failure = await fx.runResult(fx.fail(error));
+
+    expect(success).toEqual({ ok: true, value: "ok" });
+    expect(failure).toEqual({ ok: false, error });
+  });
+
+  test("fx.runOrThrowSync and fx.runResultSync support synchronous boundaries", () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const error = AppError.Boom({ message: "bad" });
+
+    expect(fx.runOrThrowSync(fx.succeed("ok"))).toBe("ok");
+    expect(() => fx.runOrThrowSync(fx.fail(error))).toThrow(error);
+    expect(fx.runResultSync(fx.succeed("ok"))).toEqual({ ok: true, value: "ok" });
+    expect(fx.runResultSync(fx.fail(error))).toEqual({ ok: false, error });
+  });
+
   test("fx.app.provide returns a provided task that can be run later", async () => {
     interface Env {
       readonly value: string;
@@ -580,6 +614,36 @@ describe("fx runtime behavior", () => {
     });
 
     expect(fx.run(app.provide(program))).resolves.toBe("provided");
+  });
+
+  test("fx.app exposes normal JavaScript boundary helpers", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("Env");
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const error = AppError.Boom({ message: "bad" });
+    const app = fx.app(fx.provideDependency(Env, { value: "provided" }));
+
+    const success = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+
+    expect(await app.runOrThrow(success)).toBe("provided");
+    expect(await app.runResult(success)).toEqual({ ok: true, value: "provided" });
+
+    try {
+      await app.runOrThrow(fx.fail(error));
+      throw new Error("Expected app.runOrThrow to throw");
+    } catch (cause) {
+      expect(cause).toBe(error);
+    }
+
+    expect(await app.runResult(fx.fail(error))).toEqual({ ok: false, error });
+    expect(app.runOrThrowSync(success)).toBe("provided");
+    expect(app.runResultSync(success)).toEqual({ ok: true, value: "provided" });
   });
 
   test("fx.timeout fails slow tasks with Effect's timeout error", async () => {
