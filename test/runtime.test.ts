@@ -1,0 +1,763 @@
+import { describe, expect, test } from "bun:test";
+import { fx, type ErrorsOf, type Task } from "../src/index";
+import { Effect } from "../src/effect";
+
+describe("fx runtime behavior", () => {
+  test("fx.try catches synchronous throws", async () => {
+    const AppError = fx.errors<{ Boom: { cause: unknown } }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.try({
+          try: () => {
+            throw new Error("boom");
+          },
+          catch: (cause) => AppError.Boom({ cause }),
+        }),
+        {
+          Boom: (error) => fx.succeed(error._tag),
+        },
+      ),
+    );
+
+    expect(result).toBe("Boom");
+  });
+
+  test("fx.try catches rejected promises", async () => {
+    const AppError = fx.errors<{ NetworkError: { cause: unknown } }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.try({
+          try: async () => {
+            throw new Error("offline");
+          },
+          catch: (cause) => AppError.NetworkError({ cause }),
+        }),
+        {
+          NetworkError: (error) => fx.succeed(error._tag),
+        },
+      ),
+    );
+
+    expect(result).toBe("NetworkError");
+  });
+
+  test("fx.require fails on null and can be recovered by tag", async () => {
+    const AppError = fx.errors<{ Missing: { field: string } }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.require(null as string | null, () => AppError.Missing({ field: "id" })),
+        {
+          Missing: (error) => fx.succeed(error.field),
+        },
+      ),
+    );
+
+    expect(result).toBe("id");
+  });
+
+  test("fx.runWith provides dependencies", async () => {
+    interface Greeter {
+      readonly greet: (name: string) => string;
+    }
+
+    const Greeter = fx.dependency<Greeter>("Greeter");
+
+    const program = fx.task(function* () {
+      const greeter = yield* fx.getDependency(Greeter);
+      return greeter.greet("Ada");
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.provideDependency(Greeter, {
+        greet: (name) => `Hello, ${name}`,
+      }),
+    );
+
+    expect(result).toBe("Hello, Ada");
+  });
+
+  test("fx.each is sequential by default", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const result = await fx.run(
+      fx.each([1, 2, 3], (n) =>
+        fx.task(function* () {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          yield* Effect.sleep("5 millis");
+          active -= 1;
+          return n;
+        }),
+      ),
+    );
+
+    expect(result).toEqual([1, 2, 3]);
+    expect(maxActive).toBe(1);
+  });
+
+  test("fx.eachParallel runs work concurrently", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const result = await fx.run(
+      fx.eachParallel([1, 2, 3], (n) =>
+        fx.task(function* () {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          yield* Effect.sleep("10 millis");
+          active -= 1;
+          return n;
+        }),
+      ),
+    );
+
+    expect(result).toEqual([1, 2, 3]);
+    expect(maxActive).toBeGreaterThan(1);
+  });
+
+  test("fx.retryTimes retries failed tasks", async () => {
+    let attempts = 0;
+
+    const result = await fx.run(
+      fx.retryTimes(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            if (attempts < 3) {
+              throw new Error("not yet");
+            }
+            return "ok";
+          },
+          catch: (cause) => cause,
+        }),
+        3,
+      ),
+    );
+
+    expect(result).toBe("ok");
+    expect(attempts).toBe(3);
+  });
+
+  test("fx.timeoutFail converts slow tasks to typed failures", async () => {
+    const AppError = fx.errors<{ TimedOut: {} }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.timeoutFail(Effect.sleep("50 millis"), "1 millis", () => AppError.TimedOut({})),
+        {
+          TimedOut: (error) => fx.succeed(error._tag),
+        },
+      ),
+    );
+
+    expect(result).toBe("TimedOut");
+  });
+
+  test("fx.ensure succeeds when the condition is true", async () => {
+    const AppError = fx.errors<{ Invalid: {} }>();
+
+    const result = await fx.run(
+      fx.task(function* () {
+        yield* fx.ensure(true, () => AppError.Invalid({}));
+        return "valid";
+      }),
+    );
+
+    expect(result).toBe("valid");
+  });
+
+  test("fx.orNull and fx.orUndefined turn failures into fallback values", async () => {
+    const AppError = fx.errors<{ Missing: {} }>();
+
+    const [nullResult, undefinedResult] = await fx.run(
+      fx.sequence([
+        fx.orNull(fx.fail(AppError.Missing({}))),
+        fx.orUndefined(fx.fail(AppError.Missing({}))),
+      ] as const),
+    );
+
+    expect(nullResult).toBeNull();
+    expect(undefinedResult).toBeUndefined();
+  });
+
+  test("fx.orElse falls back to another task after failure", async () => {
+    const AppError = fx.errors<{ PrimaryFailed: {} }>();
+
+    const result = await fx.run(
+      fx.orElse(fx.fail(AppError.PrimaryFailed({})), () => fx.succeed("fallback")),
+    );
+
+    expect(result).toBe("fallback");
+  });
+
+  test("fx.eachLimit respects bounded concurrency", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const result = await fx.run(
+      fx.eachLimit([1, 2, 3, 4, 5], 2, (n) =>
+        fx.task(function* () {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          yield* Effect.sleep("10 millis");
+          active -= 1;
+          return n * 2;
+        }),
+      ),
+    );
+
+    expect(result).toEqual([2, 4, 6, 8, 10]);
+    expect(maxActive).toBe(2);
+  });
+
+  test("fx.sequence preserves object shape", async () => {
+    const result = await fx.run(
+      fx.sequence({
+        id: fx.succeed("1"),
+        count: fx.succeed(2),
+      }),
+    );
+
+    expect(result).toEqual({ id: "1", count: 2 });
+  });
+
+  test("fx.app provides reusable dependency wiring", async () => {
+    interface Clock {
+      readonly now: () => number;
+    }
+
+    const Clock = fx.dependency<Clock>("Clock");
+    const app = fx.app(fx.provideDependency(Clock, { now: () => 123 }));
+
+    const program = fx.task(function* () {
+      const clock = yield* fx.getDependency(Clock);
+      return clock.now();
+    });
+
+    expect(await app.run(program)).toBe(123);
+    expect(await app.runExit(program)).toMatchObject({ _tag: "Success" });
+  });
+
+  test("fx.getDependency can retrieve several dependencies as a named object", async () => {
+    interface Config {
+      readonly prefix: string;
+    }
+
+    interface Counter {
+      readonly next: () => number;
+    }
+
+    const Config = fx.dependency<Config>("Config");
+    const Counter = fx.dependency<Counter>("Counter");
+
+    const program = fx.task(function* () {
+      const { config, counter } = yield* fx.getDependency({
+        config: Config,
+        counter: Counter,
+      });
+
+      return `${config.prefix}-${counter.next()}`;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.dependencies(
+        fx.provideDependency(Config, { prefix: "job" }),
+        fx.provideDependency(Counter, { next: () => 7 }),
+      ),
+    );
+
+    expect(result).toBe("job-7");
+  });
+
+  test("fx.provideDependency accepts task-built implementations", async () => {
+    interface TokenStore {
+      readonly token: string;
+    }
+
+    const TokenStore = fx.dependency<TokenStore>("TokenStore");
+
+    const program = fx.task(function* () {
+      const store = yield* fx.getDependency(TokenStore);
+      return store.token;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.provideDependency(TokenStore, fx.succeed({ token: "secret" })),
+    );
+
+    expect(result).toBe("secret");
+  });
+
+  test("fx.recoverTag only handles the matching tagged failure", async () => {
+    const AppError = fx.errors<{
+      NotFound: { id: string };
+      Unauthorized: {};
+    }>();
+
+    const recovered = await fx.run(
+      fx.recoverTag(fx.fail(AppError.NotFound({ id: "1" })), "NotFound", (error) =>
+        fx.succeed(error.id),
+      ),
+    );
+
+    const unauthorized: Task<never, ErrorsOf<typeof AppError>> = fx.fail(AppError.Unauthorized({}));
+
+    const unrecovered = await fx.runExit(
+      fx.recoverTag(unauthorized, "NotFound", (error) => fx.succeed(error.id)),
+    );
+
+    expect(recovered).toBe("1");
+    expect(unrecovered._tag).toBe("Failure");
+  });
+
+  test("fx.match handles success and failure branches", async () => {
+    const AppError = fx.errors<{ Invalid: { reason: string } }>();
+
+    const success = await fx.run(
+      fx.match(fx.succeed(2), {
+        onFailure: () => "failed",
+        onSuccess: (value) => `ok:${value}`,
+      }),
+    );
+
+    const failure = await fx.run(
+      fx.match(fx.fail(AppError.Invalid({ reason: "bad" })), {
+        onFailure: (error) => error.reason,
+        onSuccess: () => "ok",
+      }),
+    );
+
+    expect(success).toBe("ok:2");
+    expect(failure).toBe("bad");
+  });
+
+  test("fx.either exposes failures as values", async () => {
+    const AppError = fx.errors<{ Invalid: { reason: string } }>();
+
+    const result = await fx.run(fx.either(fx.fail(AppError.Invalid({ reason: "bad" }))));
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left.reason).toBe("bad");
+    }
+  });
+
+  test("fx.runSafe returns failed exits instead of rejecting", async () => {
+    const AppError = fx.errors<{ Boom: {} }>();
+
+    const result = await fx.runSafe(fx.fail(AppError.Boom({})));
+
+    expect(result._tag).toBe("Failure");
+  });
+
+  test("fx.try receives an AbortSignal that is aborted on interruption", async () => {
+    let signalWasAborted = false;
+
+    await fx.runExit(
+      fx.timeoutFail(
+        fx.try({
+          try: (signal) =>
+            new Promise<never>((_resolve, reject) => {
+              signal.addEventListener("abort", () => {
+                signalWasAborted = signal.aborted;
+                reject(new Error("aborted"));
+              });
+            }),
+          catch: (cause) => cause,
+        }),
+        "1 millis",
+        () => "timed out",
+      ),
+    );
+
+    expect(signalWasAborted).toBe(true);
+  });
+
+  test("fx.onSuccess and fx.onFailure run hooks without changing the original result", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const events: string[] = [];
+
+    const success = await fx.run(
+      fx.onSuccess(fx.succeed("value"), (value) =>
+        fx.sync(() => {
+          events.push(`success:${value}`);
+        }),
+      ),
+    );
+
+    const failure = await fx.runExit(
+      fx.onFailure(fx.fail(AppError.Boom({ message: "bad" })), (error) =>
+        fx.sync(() => {
+          events.push(`failure:${error.message}`);
+        }),
+      ),
+    );
+
+    expect(success).toBe("value");
+    expect(failure._tag).toBe("Failure");
+    expect(events).toEqual(["success:value", "failure:bad"]);
+  });
+
+  test("fx.withDependency can provide a single dependency directly", async () => {
+    interface Formatter {
+      readonly format: (value: string) => string;
+    }
+
+    const Formatter = fx.dependency<Formatter>("Formatter");
+
+    const program = fx.task(function* () {
+      const formatter = yield* fx.getDependency(Formatter);
+      return formatter.format("hello");
+    });
+
+    const result = await fx.run(
+      fx.withDependency(program, Formatter, {
+        format: (value) => value.toUpperCase(),
+      }),
+    );
+
+    expect(result).toBe("HELLO");
+  });
+
+  test("fx.parallelLimit respects bounded concurrency for task collections", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const makeTask = (n: number) =>
+      fx.task(function* () {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        yield* Effect.sleep("10 millis");
+        active -= 1;
+        return n;
+      });
+
+    const result = await fx.run(
+      fx.parallelLimit([makeTask(1), makeTask(2), makeTask(3), makeTask(4)], 2),
+    );
+
+    expect(result).toEqual([1, 2, 3, 4]);
+    expect(maxActive).toBe(2);
+  });
+
+  test("fx.runSync and fx.runExitSync execute synchronous tasks", () => {
+    expect(fx.runSync(fx.sync(() => 42))).toBe(42);
+    expect(fx.runExitSync(fx.succeed("ok"))).toMatchObject({ _tag: "Success" });
+  });
+
+  test("fx.error and fx.errors create tagged error values", () => {
+    const ValidationErrorFactory = fx.error("ValidationError");
+    const ValidationError = ValidationErrorFactory<{ field: string }>();
+    const AppError = fx.errors<{ NotFound: { id: string } }>();
+
+    expect(ValidationErrorFactory.type).toBe("ValidationError");
+    expect(ValidationError({ field: "email" })).toEqual({
+      _tag: "ValidationError",
+      field: "email",
+    });
+
+    expect(AppError.NotFound.type).toBe("NotFound");
+    expect(AppError.NotFound({ id: "1" })).toEqual({
+      _tag: "NotFound",
+      id: "1",
+    });
+  });
+
+  test("fx.trySync catches synchronous throws", async () => {
+    const AppError = fx.errors<{ ParseError: { cause: unknown } }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.trySync({
+          try: () => JSON.parse("not json"),
+          catch: (cause) => AppError.ParseError({ cause }),
+        }),
+        {
+          ParseError: (error) => fx.succeed(error._tag),
+        },
+      ),
+    );
+
+    expect(result).toBe("ParseError");
+  });
+
+  test("fx.ensure fails when the condition is false", async () => {
+    const AppError = fx.errors<{ Invalid: { field: string } }>();
+
+    const result = await fx.run(
+      fx.recoverErrors(
+        fx.ensure(false, () => AppError.Invalid({ field: "name" })),
+        {
+          Invalid: (error) => fx.succeed(error.field),
+        },
+      ),
+    );
+
+    expect(result).toBe("name");
+  });
+
+  test("fx.require returns present values", async () => {
+    expect(fx.run(fx.require("present", () => "missing"))).resolves.toBe("present");
+  });
+
+  test("fx.map, fx.chain, and fx.when compose tasks", async () => {
+    const mapped = fx.map(fx.succeed(1), (n) => n + 1);
+    const chained = fx.chain(mapped, (n) => fx.succeed(n * 2));
+    const branched = fx.when(true, {
+      onTrue: () => chained,
+      onFalse: () => fx.succeed(0),
+    });
+
+    expect(fx.run(branched)).resolves.toBe(4);
+  });
+
+  test("fx.parallel runs task collections concurrently", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const makeTask = (n: number) =>
+      fx.task(function* () {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        yield* Effect.sleep("10 millis");
+        active -= 1;
+        return n;
+      });
+
+    const result = await fx.run(fx.parallel([makeTask(1), makeTask(2), makeTask(3)]));
+
+    expect(result).toEqual([1, 2, 3]);
+    expect(maxActive).toBeGreaterThan(1);
+  });
+
+  test("fx.retry supports simple times options", async () => {
+    let attempts = 0;
+
+    const result = await fx.run(
+      fx.retry(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            if (attempts < 2) {
+              throw new Error("again");
+            }
+            return "done";
+          },
+          catch: (cause) => cause,
+        }),
+        { times: 2 },
+      ),
+    );
+
+    expect(result).toBe("done");
+    expect(attempts).toBe(2);
+  });
+
+  test("fx.run rejects typed failures", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+
+    expect(fx.run(fx.fail(AppError.Boom({ message: "bad" })))).rejects.toBeDefined();
+  });
+
+  test("fx.app.provide returns a provided task that can be run later", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("Env");
+    const app = fx.app(fx.provideDependency(Env, { value: "provided" }));
+
+    const program = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+
+    expect(fx.run(app.provide(program))).resolves.toBe("provided");
+  });
+
+  test("fx.timeout fails slow tasks with Effect's timeout error", async () => {
+    const result = await fx.runExit(fx.timeout(Effect.sleep("20 millis"), "1 millis"));
+
+    expect(result._tag).toBe("Failure");
+  });
+
+  test("fx.timeout returns the value for fast tasks without a typed timeout error", async () => {
+    const result = await fx.run(fx.timeout(fx.succeed("fast"), "1 second"));
+
+    expect(result).toBe("fast");
+  });
+
+  test("fx.retry with backoff options retries until success", async () => {
+    let attempts = 0;
+
+    const result = await fx.run(
+      fx.retry(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            if (attempts < 2) {
+              throw new Error("again");
+            }
+            return "done";
+          },
+          catch: (cause) => cause,
+        }),
+        { backoff: "1 millis", times: 2 },
+      ),
+    );
+
+    expect(result).toBe("done");
+    expect(attempts).toBe(2);
+  });
+
+  test("fx.layerSync and fx.mergeLayers provide multiple dependencies", async () => {
+    interface Left {
+      readonly value: string;
+    }
+
+    interface Right {
+      readonly value: string;
+    }
+
+    const Left = fx.dependency<Left>("Left");
+    const Right = fx.dependency<Right>("Right");
+
+    const program = fx.task(function* () {
+      const { left, right } = yield* fx.getDependency({
+        left: Left,
+        right: Right,
+      });
+      return `${left.value}:${right.value}`;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.mergeLayers(fx.layerSync(Left, { value: "a" }), fx.layerSync(Right, { value: "b" })),
+    );
+
+    expect(result).toBe("a:b");
+  });
+
+  test("fx.dependencyValue and fx.dependencyTask aliases provide dependencies", async () => {
+    interface A {
+      readonly value: string;
+    }
+
+    interface B {
+      readonly value: string;
+    }
+
+    const A = fx.dependency<A>("A");
+    const B = fx.dependency<B>("B");
+
+    const program = fx.task(function* () {
+      const { a, b } = yield* fx.getDependency({ a: A, b: B });
+      return `${a.value}-${b.value}`;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.dependencies(
+        fx.dependencyValue(A, { value: "value" }),
+        fx.dependencyTask(B, fx.succeed({ value: "task" })),
+      ),
+    );
+
+    expect(result).toBe("value-task");
+  });
+
+  test("fx.log helpers and fx.trace preserve task success", async () => {
+    const result = await fx.run(
+      fx.trace(
+        fx.task(function* () {
+          yield* fx.log("info", { ok: true });
+          yield* fx.logWarn("warn");
+          yield* fx.logError("error");
+          return "logged";
+        }),
+        "test-span",
+      ),
+    );
+
+    expect(result).toBe("logged");
+  });
+
+  test("fx.recover handles any typed failure", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+
+    const result = await fx.run(
+      fx.recover(fx.fail(AppError.Boom({ message: "bad" })), (error) => fx.succeed(error.message)),
+    );
+
+    expect(result).toBe("bad");
+  });
+
+  test("fx.tap runs a side effect while preserving the original value", async () => {
+    const events: string[] = [];
+
+    const result = await fx.run(
+      fx.tap(fx.succeed("original"), (value) =>
+        fx.sync(() => {
+          events.push(value);
+        }),
+      ),
+    );
+
+    expect(result).toBe("original");
+    expect(events).toEqual(["original"]);
+  });
+
+  test("fx.all exposes native Effect.all behavior", async () => {
+    const result = await fx.run(
+      fx.all({
+        one: fx.succeed(1),
+        two: fx.succeed(2),
+      }),
+    );
+
+    expect(result).toEqual({ one: 1, two: 2 });
+  });
+
+  test("fx.mergeAllLayers provides several dependencies", async () => {
+    interface A {
+      readonly value: string;
+    }
+    interface B {
+      readonly value: string;
+    }
+    interface C {
+      readonly value: string;
+    }
+
+    const A = fx.dependency<A>("MergeAllA");
+    const B = fx.dependency<B>("MergeAllB");
+    const C = fx.dependency<C>("MergeAllC");
+
+    const program = fx.task(function* () {
+      const { a, b, c } = yield* fx.getDependency({ a: A, b: B, c: C });
+      return `${a.value}${b.value}${c.value}`;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.mergeAllLayers(
+        fx.provideDependency(A, { value: "a" }),
+        fx.provideDependency(B, { value: "b" }),
+        fx.provideDependency(C, { value: "c" }),
+      ),
+    );
+
+    expect(result).toBe("abc");
+  });
+
+  test("fx.runSync throws for asynchronous tasks", () => {
+    expect(() => fx.runSync(Effect.sleep("1 millis"))).toThrow();
+  });
+});

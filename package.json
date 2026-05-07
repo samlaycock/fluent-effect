@@ -1,0 +1,53 @@
+{
+  "name": "fluent-effect",
+  "version": "0.0.0",
+  "description": "An ergonomic TypeScript API over Effect.",
+  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/samlaycock/fluent-effect"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./effect": {
+      "types": "./dist/effect.d.ts",
+      "import": "./dist/effect.mjs",
+      "require": "./dist/effect.js"
+    }
+  },
+  "publishConfig": {
+    "provenance": true
+  },
+  "scripts": {
+    "test": "bun test",
+    "lint": "oxlint . --type-aware",
+    "lint:fix": "oxlint . --type-aware --fix",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt . --check",
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "ci:publish": "bun run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "2.31.0",
+    "@types/bun": "latest",
+    "effect": "3.21.2",
+    "oxfmt": "0.48.0",
+    "oxlint": "1.63.0",
+    "oxlint-tsgolint": "0.22.1",
+    "tsdown": "0.22.0"
+  },
+  "peerDependencies": {
+    "effect": "^3.21.0",
+    "typescript": "^5"
+  }
+}
