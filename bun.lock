@@ -12,10 +12,10 @@
         "oxlint": "1.63.0",
         "oxlint-tsgolint": "0.22.1",
         "tsdown": "0.22.0",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "effect": "^3.21.0",
-        "typescript": "^5",
       },
     },
   },
