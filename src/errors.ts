@@ -1,6 +1,8 @@
 import { Effect } from "effect";
-import { ok } from "./builders.js";
+
 import type { Task } from "./types.js";
+
+import { ok } from "./builders.js";
 
 /** Alias: recover from any typed failure, returning a fallback Task. */
 export const recover = Effect.catchAll;

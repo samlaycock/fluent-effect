@@ -1,3 +1,4 @@
+import { Effect, Either, Layer } from "../src/effect";
 import {
   fx,
   type ErrorOf,
@@ -7,7 +8,6 @@ import {
   type TaskError,
   type TaskResult,
 } from "../src/index";
-import { Effect, Either, Layer } from "../src/effect";
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;

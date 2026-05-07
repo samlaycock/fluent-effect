@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { fx, type ErrorsOf, type Task } from "../src/index";
+
 import { Effect } from "../src/effect";
+import { fx, type ErrorsOf, type Task } from "../src/index";
 
 describe("fx runtime behavior", () => {
   test("fx.try catches synchronous throws", async () => {

@@ -1,4 +1,5 @@
 import { Effect, Tracer } from "effect";
+
 import type { Task } from "./types.js";
 
 /** Emit a structured info log line. */
