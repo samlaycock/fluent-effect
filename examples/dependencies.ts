@@ -41,6 +41,7 @@ const testUsers = fx.provideDependency(Users, {
     id === "1" ? fx.succeed({ id, name: "Ada" }) : fx.fail(AppError.NotFound({ id })),
 });
 
+// Use provideDependencyTask when the dependency implementation is built by a Task.
 const consoleAudit = fx.provideDependencyTask(
   AuditLog,
   fx.succeed({
