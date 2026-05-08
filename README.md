@@ -90,6 +90,9 @@ const safeUser = fx.recoverErrors(loadUser("1"), {
 ### Dependencies
 
 Define dependencies once, pull them by name inside tasks, provide implementations at the edge.
+Use `provideDependency` when you already have the dependency value, even if that value is an
+Effect. Use `provideDependencyTask` only when the dependency implementation must be built by
+running a Task.
 
 ```ts
 interface Users {
@@ -117,6 +120,7 @@ const dependencies = fx.dependencies(
   fx.provideDependency(Users, {
     findById: () => fx.succeed({ id: "1", name: "Ada" }),
   }),
+  // Build this implementation from a Task at startup.
   fx.provideDependencyTask(
     AuditLog,
     fx.succeed({
