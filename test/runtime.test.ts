@@ -216,6 +216,17 @@ describe("fx runtime behavior", () => {
     expect(maxActive).toBe(2);
   });
 
+  test("fx.eachLimit rejects invalid bounded concurrency", () => {
+    const invalidLimits = [0, -1, Number.NaN, 1.5];
+
+    for (const concurrency of invalidLimits) {
+      expect(() => fx.eachLimit([1], concurrency, (n) => fx.succeed(n))).toThrow(RangeError);
+      expect(() => fx.eachLimit([1], concurrency, (n) => fx.succeed(n))).toThrow(
+        "bounded concurrency must be a positive finite integer",
+      );
+    }
+  });
+
   test("fx.sequence preserves object shape", async () => {
     const result = await fx.run(
       fx.sequence({
@@ -446,6 +457,28 @@ describe("fx runtime behavior", () => {
 
     expect(result).toEqual([1, 2, 3, 4]);
     expect(maxActive).toBe(2);
+  });
+
+  test("fx.parallelLimit rejects invalid bounded concurrency", () => {
+    const invalidLimits = [0, -1, Number.NaN, 1.5];
+
+    for (const concurrency of invalidLimits) {
+      expect(() => fx.parallelLimit([fx.succeed(1)], concurrency)).toThrow(RangeError);
+      expect(() => fx.parallelLimit([fx.succeed(1)], concurrency)).toThrow(
+        "bounded concurrency must be a positive finite integer",
+      );
+    }
+  });
+
+  test("fx.sequence rejects invalid bounded concurrency", () => {
+    const invalidLimits = [0, -1, Number.NaN, 1.5];
+
+    for (const concurrency of invalidLimits) {
+      expect(() => fx.sequence([fx.succeed(1)], { concurrency })).toThrow(RangeError);
+      expect(() => fx.sequence([fx.succeed(1)], { concurrency })).toThrow(
+        "bounded concurrency must be a positive finite integer",
+      );
+    }
   });
 
   test("fx.runSync and fx.runExitSync execute synchronous tasks", () => {

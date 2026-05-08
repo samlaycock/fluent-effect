@@ -31,8 +31,16 @@ type ExecutionOptions<C extends Concurrency = Concurrency> = {
 
 type EffectConcurrency<C extends Concurrency> = C extends true ? "unbounded" : C;
 
+const validateBoundedConcurrency = (concurrency: number) => {
+  if (!Number.isFinite(concurrency) || !Number.isInteger(concurrency) || concurrency < 1) {
+    throw new RangeError("bounded concurrency must be a positive finite integer");
+  }
+
+  return concurrency;
+};
+
 const normalizeConcurrency = (concurrency: Concurrency | undefined) =>
-  concurrency === true ? "unbounded" : (concurrency ?? 1);
+  concurrency === true ? "unbounded" : validateBoundedConcurrency(concurrency ?? 1);
 
 /** Map over a collection. Sequential by default; pass concurrency for parallel work. */
 export function each<I, A, E, R>(
@@ -63,7 +71,7 @@ export const eachLimit = <I, A, E, R>(
   items: Iterable<I>,
   concurrency: number,
   f: (item: I, index: number) => Task<A, E, R>,
-) => each(items, f, { concurrency });
+) => each(items, f, { concurrency: validateBoundedConcurrency(concurrency) });
 
 /** Alias: native Effect.all. Pass options explicitly for native behavior. */
 export const all = Effect.all;
@@ -133,7 +141,7 @@ export function parallelLimit(
   tasks: Iterable<Task<any, any, any>> | Record<string, Task<any, any, any>>,
   concurrency: number,
 ) {
-  return Effect.all(tasks, { concurrency });
+  return Effect.all(tasks, { concurrency: validateBoundedConcurrency(concurrency) });
 }
 
 /** Alias: conditionally run one of two tasks. */
