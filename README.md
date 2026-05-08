@@ -117,7 +117,7 @@ const dependencies = fx.dependencies(
   fx.provideDependency(Users, {
     findById: () => fx.succeed({ id: "1", name: "Ada" }),
   }),
-  fx.provideDependency(
+  fx.provideDependencyTask(
     AuditLog,
     fx.succeed({
       record: (message) => fx.log(message),

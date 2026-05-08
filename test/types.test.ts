@@ -321,7 +321,7 @@ type _layer_success = Expect<Equal<Layer.Layer.Success<typeof repoLayerEffect>, 
 type _layer_error = Expect<Equal<Layer.Layer.Error<typeof repoLayerEffect>, NetworkError>>;
 type _layer_context = Expect<Equal<Layer.Layer.Context<typeof repoLayerEffect>, never>>;
 
-const dependencyTaskProvider = fx.provideDependency(
+const dependencyTaskProvider = fx.provideDependencyTask(
   Users,
   fx.try({
     try: async () => ({

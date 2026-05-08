@@ -41,7 +41,7 @@ const testUsers = fx.provideDependency(Users, {
     id === "1" ? fx.succeed({ id, name: "Ada" }) : fx.fail(AppError.NotFound({ id })),
 });
 
-const consoleAudit = fx.provideDependency(
+const consoleAudit = fx.provideDependencyTask(
   AuditLog,
   fx.succeed({
     record: (message, data) => fx.log(message, data),

@@ -60,16 +60,8 @@ export const layerSync = <I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I>
 
 /** Provide a dependency implementation from a plain value. */
 export function provideDependency<I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I>;
-/** Provide a dependency implementation from a Task. */
-export function provideDependency<I, S, E, R>(
-  tag: Context.Tag<I, S>,
-  impl: Task<S, E, R>,
-): Layer.Layer<I, E, R>;
-export function provideDependency<I, S, E, R>(
-  tag: Context.Tag<I, S>,
-  impl: S | Task<S, E, R>,
-): Layer.Layer<I, E, R> | Layer.Layer<I> {
-  return Effect.isEffect(impl) ? Layer.effect(tag, impl) : Layer.succeed(tag, impl);
+export function provideDependency<I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I> {
+  return Layer.succeed(tag, impl);
 }
 
 /** Provide a dependency implementation from a Task. */
