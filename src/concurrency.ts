@@ -155,19 +155,19 @@ export function retry<A, E, R, B, R1>(
   self: Task<A, E, R>,
   policyOrOptions: Schedule.Schedule<B, NoInfer<E>, R1> | RetryOptions,
 ): Task<A, E, R | R1> {
-  if ("backoff" in policyOrOptions || "times" in policyOrOptions) {
-    if (policyOrOptions.backoff !== undefined) {
-      return retryBackoff(self, {
-        base: policyOrOptions.backoff,
-        factor: policyOrOptions.factor,
-        times: policyOrOptions.times,
-      });
-    }
-
-    return retryTimes(self, policyOrOptions.times ?? 0);
+  if (Schedule.isSchedule(policyOrOptions)) {
+    return Effect.retry(self, policyOrOptions);
   }
 
-  return Effect.retry(self, policyOrOptions);
+  if (policyOrOptions.backoff !== undefined) {
+    return retryBackoff(self, {
+      base: policyOrOptions.backoff,
+      factor: policyOrOptions.factor,
+      times: policyOrOptions.times,
+    });
+  }
+
+  return retryTimes(self, policyOrOptions.times ?? 0);
 }
 
 /** Helper: retry a task a fixed number of times. */

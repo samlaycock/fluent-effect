@@ -561,6 +561,48 @@ describe("fx runtime behavior", () => {
     expect(attempts).toBe(2);
   });
 
+  test("fx.retry treats empty options as zero retries", async () => {
+    let attempts = 0;
+    const error = new Error("again");
+
+    const result = await fx.runResult(
+      fx.retry(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            throw error;
+          },
+          catch: (cause) => cause,
+        }),
+        {},
+      ),
+    );
+
+    expect(result).toEqual({ ok: false, error });
+    expect(attempts).toBe(1);
+  });
+
+  test("fx.retry treats factor-only options as zero retries", async () => {
+    let attempts = 0;
+    const error = new Error("again");
+
+    const result = await fx.runResult(
+      fx.retry(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            throw error;
+          },
+          catch: (cause) => cause,
+        }),
+        { factor: 2 },
+      ),
+    );
+
+    expect(result).toEqual({ ok: false, error });
+    expect(attempts).toBe(1);
+  });
+
   test("fx.run rejects typed failures", async () => {
     const AppError = fx.errors<{ Boom: { message: string } }>();
 
