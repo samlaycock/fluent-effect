@@ -287,7 +287,23 @@ describe("fx runtime behavior", () => {
     expect(result).toBe("job-7");
   });
 
-  test("fx.provideDependency accepts task-built implementations", async () => {
+  test("fx.provideDependency accepts Effect values as plain implementations", async () => {
+    const EffectValue = fx.dependency<Task<string>>("EffectValue");
+
+    const program = fx.task(function* () {
+      const value = yield* fx.getDependency(EffectValue);
+      return yield* value;
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.provideDependency(EffectValue, fx.succeed("plain-effect-value")),
+    );
+
+    expect(result).toBe("plain-effect-value");
+  });
+
+  test("fx.provideDependencyTask accepts task-built implementations", async () => {
     interface TokenStore {
       readonly token: string;
     }
@@ -301,7 +317,7 @@ describe("fx runtime behavior", () => {
 
     const result = await fx.runWith(
       program,
-      fx.provideDependency(TokenStore, fx.succeed({ token: "secret" })),
+      fx.provideDependencyTask(TokenStore, fx.succeed({ token: "secret" })),
     );
 
     expect(result).toBe("secret");
