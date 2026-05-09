@@ -61,6 +61,9 @@ fx.fail(AppError.NotFound({ id }));
 ### Typed Errors
 
 Prefer `fx.errors` for application errors. Calling a constructor creates the error instance.
+Pass an explicit runtime spec when the available constructors must be discoverable with reflection
+APIs such as `Object.keys`, `in`, or object spread. Without that runtime spec, TypeScript-only error
+tags are erased at runtime and constructors remain lazy/direct-access only.
 
 ```ts
 import type { ErrorOf, ErrorsOf } from "fluent-effect";
@@ -68,7 +71,12 @@ import type { ErrorOf, ErrorsOf } from "fluent-effect";
 const AppError = fx.errors<{
   NotFound: { id: string };
   NetworkError: { cause: unknown };
-}>();
+}>({
+  NotFound: null,
+  NetworkError: null,
+});
+
+Object.keys(AppError); // ["NotFound", "NetworkError"]
 
 type NotFound = ErrorOf<typeof AppError.NotFound>;
 type AppErrors = ErrorsOf<typeof AppError>;

@@ -551,6 +551,37 @@ describe("fx runtime behavior", () => {
     });
   });
 
+  test("fx.errors exposes explicit runtime specs to reflection", () => {
+    const AppError = fx.errors<{ TimedOut: {}; NotFound: { id: string } }>({
+      NotFound: null,
+      TimedOut: null,
+    });
+
+    expect(Object.keys(AppError)).toEqual(["NotFound", "TimedOut"]);
+    expect("NotFound" in AppError).toBe(true);
+    expect("Unknown" in AppError).toBe(false);
+    expect({ ...AppError }).toEqual({
+      NotFound: AppError.NotFound,
+      TimedOut: AppError.TimedOut,
+    });
+    expect(AppError.NotFound({ id: "1" })).toEqual({
+      _tag: "NotFound",
+      id: "1",
+    });
+  });
+
+  test("fx.errors without a runtime spec keeps lazy constructors undiscoverable", () => {
+    const AppError = fx.errors<{ NotFound: { id: string } }>();
+
+    expect(Object.keys(AppError)).toEqual([]);
+    expect("NotFound" in AppError).toBe(false);
+    expect({ ...(AppError as Record<string, unknown>) }).toEqual({});
+    expect(AppError.NotFound({ id: "1" })).toEqual({
+      _tag: "NotFound",
+      id: "1",
+    });
+  });
+
   test("fx.trySync catches synchronous throws", async () => {
     const AppError = fx.errors<{ ParseError: { cause: unknown } }>();
 
