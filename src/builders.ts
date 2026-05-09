@@ -38,7 +38,7 @@ export const errors = <Spec extends Record<string, object>>(): ErrorConstructors
           return undefined;
         }
 
-        return Object.assign((fields: object) => ({ ...fields, _tag: property }), {
+        return Object.assign((fields: object = {}) => ({ ...fields, _tag: property }), {
           type: property,
         });
       },

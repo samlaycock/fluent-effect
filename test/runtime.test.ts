@@ -531,7 +531,7 @@ describe("fx runtime behavior", () => {
   test("fx.error and fx.errors create tagged error values", () => {
     const ValidationErrorFactory = fx.error("ValidationError");
     const ValidationError = ValidationErrorFactory<{ field: string }>();
-    const AppError = fx.errors<{ NotFound: { id: string } }>();
+    const AppError = fx.errors<{ TimedOut: {}; NotFound: { id: string } }>();
 
     expect(ValidationErrorFactory.type).toBe("ValidationError");
     expect(ValidationError({ field: "email" })).toEqual({
@@ -543,6 +543,11 @@ describe("fx runtime behavior", () => {
     expect(AppError.NotFound({ id: "1" })).toEqual({
       _tag: "NotFound",
       id: "1",
+    });
+
+    expect(AppError.TimedOut.type).toBe("TimedOut");
+    expect(AppError.TimedOut()).toEqual({
+      _tag: "TimedOut",
     });
   });
 

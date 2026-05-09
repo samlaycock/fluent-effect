@@ -34,6 +34,7 @@ const ValidationError = fx.error("ValidationError")<{ field: string }>();
 type ValidationError = ReturnType<typeof ValidationError>;
 
 const AppError = fx.errors<{
+  TimedOut: {};
   NotFound: { id: string };
   InvalidInput: { field: string };
 }>();
@@ -91,14 +92,22 @@ type _succeed_result = Expect<Equal<TaskResult<typeof succeeded>, User>>;
 type _from_sync_result = Expect<Equal<TaskResult<typeof fromSync>, User>>;
 
 const validationError = ValidationError({ field: "email" });
+const timedOut = AppError.TimedOut();
 const appNotFound = AppError.NotFound({ id: "1" });
 const invalidInput = AppError.InvalidInput({ field: "email" });
+
+// @ts-expect-error Non-empty error fields remain required.
+AppError.NotFound();
 
 type _error_factory_value = Expect<
   Equal<
     typeof validationError,
     import("../src/index").FxError<"ValidationError", { field: string }>
   >
+>;
+
+type _errors_timed_out_value = Expect<
+  Equal<typeof timedOut, import("../src/index").FxError<"TimedOut">>
 >;
 
 type _errors_not_found_value = Expect<
@@ -109,7 +118,9 @@ type _errors_invalid_input_value = Expect<
   Equal<typeof invalidInput, import("../src/index").FxError<"InvalidInput", { field: string }>>
 >;
 
-type _error_instances_union = Expect<Equal<AppErrors, AppNotFound | InvalidInput>>;
+type _error_instances_union = Expect<
+  Equal<AppErrors, typeof timedOut | AppNotFound | InvalidInput>
+>;
 
 const ensured = fx.ensure(user.id.length > 0, () => invalidInput);
 const required = fx.require(user as User | null | undefined, () => appNotFound);

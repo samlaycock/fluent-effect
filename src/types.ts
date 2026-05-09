@@ -31,7 +31,9 @@ export type ErrorFactory<Name extends string> = {
 };
 
 export type ErrorConstructor<Name extends string, Fields extends object = {}> = {
-  (fields: Fields): FxError<Name, Fields>;
+  (
+    ...args: keyof Fields extends never ? [fields?: Fields] : [fields: Fields]
+  ): FxError<Name, Fields>;
   readonly type: Name;
 };
 
