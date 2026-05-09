@@ -431,6 +431,56 @@ type _app_provided_deps = Expect<Equal<TaskDeps<typeof appProvided>, never>>;
 type _run_with_result = Expect<Equal<Awaited<typeof runWithLiveDependencies>, User>>;
 type _app_run_result = Expect<Equal<Awaited<typeof appRun>, User>>;
 
+interface DatabaseConfig {
+  readonly prefix: string;
+}
+
+const DatabaseConfig = fx.dependency<DatabaseConfig>("DatabaseConfig");
+const dependentUsers = fx.layer(
+  Users,
+  fx.task(function* () {
+    const config = yield* fx.getDependency(DatabaseConfig);
+
+    return {
+      findById: (id: string) => fx.ok({ id, name: `${config.prefix}-Ada` }),
+    };
+  }),
+);
+
+type _dependent_users_success = Expect<Equal<Layer.Layer.Success<typeof dependentUsers>, UserRepo>>;
+type _dependent_users_error = Expect<Equal<Layer.Layer.Error<typeof dependentUsers>, never>>;
+type _dependent_users_context = Expect<
+  Equal<Layer.Layer.Context<typeof dependentUsers>, DatabaseConfig>
+>;
+
+const dependentApp = fx.app(dependentUsers);
+const dependentAppProvided = dependentApp.provide(getUserFromUsers);
+const configuredDependentUsers = Layer.provide(
+  dependentUsers,
+  fx.provideDependency(DatabaseConfig, { prefix: "db" }),
+);
+const runWithConfiguredDependentUsers = fx.runWith(getUserFromUsers, configuredDependentUsers);
+
+type _dependent_app_provided_result = Expect<Equal<TaskResult<typeof dependentAppProvided>, User>>;
+type _dependent_app_provided_error = Expect<
+  Equal<TaskError<typeof dependentAppProvided>, NotFound>
+>;
+type _dependent_app_provided_deps = Expect<
+  Equal<TaskDeps<typeof dependentAppProvided>, DatabaseConfig>
+>;
+type _configured_dependent_users_success = Expect<
+  Equal<Layer.Layer.Success<typeof configuredDependentUsers>, UserRepo>
+>;
+type _configured_dependent_users_error = Expect<
+  Equal<Layer.Layer.Error<typeof configuredDependentUsers>, never>
+>;
+type _configured_dependent_users_context = Expect<
+  Equal<Layer.Layer.Context<typeof configuredDependentUsers>, never>
+>;
+type _run_with_configured_dependent_users_result = Expect<
+  Equal<Awaited<typeof runWithConfiguredDependentUsers>, User>
+>;
+
 const withUsers = fx.withDependency(getUserFromUsers, Users, {
   findById: () => fx.ok(user),
 });
