@@ -153,9 +153,14 @@ fx.sequence(tasks, { concurrency: 5 });
 fx.each(items, fn);
 fx.each(items, fn, { concurrency: true });
 fx.each(items, fn, { concurrency: 5 });
+
+fx.eachDiscard(items, fn);
+fx.eachDiscard(items, fn, { concurrency: true });
+fx.eachDiscard(items, fn, { concurrency: 5 });
 ```
 
 Omit `concurrency` for sequential work, use `true` to turn parallelism on without a limit, or pass a number to bound parallelism.
+Use `eachDiscard` for fire-and-discard traversal over large collections when you need the effects but not the collected result array.
 
 ### Retry, Timeout, Tracing
 
@@ -247,6 +252,9 @@ fx.parallel; // fx.sequence with unbounded concurrency
 fx.parallelLimit; // fx.sequence with bounded concurrency
 fx.eachParallel; // fx.each with unbounded concurrency
 fx.eachLimit; // fx.each with bounded concurrency
+fx.eachDiscard; // fx.each with discarded results
+fx.eachDiscardParallel; // fx.eachDiscard with unbounded concurrency
+fx.eachDiscardLimit; // fx.eachDiscard with bounded concurrency
 
 fx.layer; // Layer.effect
 fx.layerSync; // Layer.succeed
