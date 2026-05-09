@@ -33,6 +33,8 @@ import { Effect, Schedule, Duration } from "fluent-effect/effect";
 
 ## Recommended API
 
+Focused behavior notes live in [docs/](./docs/README.md).
+
 ### Create Tasks
 
 ```ts
@@ -59,6 +61,8 @@ fx.fail(AppError.NotFound({ id }));
 `fx.try` is the general boundary for code that may throw or reject. It is async-safe even when the work is synchronous.
 
 ### Typed Errors
+
+See [docs/errors.md](./docs/errors.md) for constructor discoverability, recovery helpers, and runtime boundary behavior.
 
 Prefer `fx.errors` for application errors. Calling a constructor creates the error instance.
 Pass an explicit runtime spec when the available constructors must be discoverable with reflection
@@ -96,6 +100,8 @@ const safeUser = fx.recoverErrors(loadUser("1"), {
 ```
 
 ### Dependencies
+
+See [docs/dependencies.md](./docs/dependencies.md) for dependency tags, provider helpers, layer composition, and runtime wiring.
 
 Define dependencies once, pull them by name inside tasks, provide implementations at the edge.
 Use `provideDependency` when you already have the dependency value, even if that value is an
@@ -143,6 +149,8 @@ const main = app.run(loadUser);
 
 ### Concurrency
 
+See [docs/concurrency.md](./docs/concurrency.md) for sequential defaults, unbounded concurrency, bounded concurrency, and discard traversal behavior.
+
 Use options when execution strategy matters. The default is sequential.
 
 ```ts
@@ -163,6 +171,8 @@ Omit `concurrency` for sequential work, use `true` to turn parallelism on withou
 Use `eachDiscard` for fire-and-discard traversal over large collections when you need the effects but not the collected result array.
 
 ### Retry, Timeout, Tracing
+
+See [docs/retry-timeout.md](./docs/retry-timeout.md) for retry attempt counting, backoff behavior, native schedules, and timeout failures.
 
 ```ts
 fx.retry(task, { times: 3 });
@@ -200,6 +210,8 @@ as their original values. Use `runResult` when boundary code wants a plain
 JavaScript result object instead of native Effect `Either` or `Exit` values.
 
 ## Native Escape Hatch
+
+See [docs/package-exports.md](./docs/package-exports.md) for package entrypoints and import guarantees.
 
 `fluent-effect/effect` is a direct passthrough:
 
