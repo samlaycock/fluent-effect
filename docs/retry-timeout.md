@@ -52,7 +52,8 @@ Native schedules are passed directly to `Effect.retry`.
 
 `fx.timeout(task, duration)` delegates to `Effect.timeout`. It succeeds with the
 original value when the task completes in time and uses native Effect timeout
-semantics when it does not.
+semantics when it does not. With Effect 3.21, that means the task fails with a
+native `TimeoutException` when the timeout wins.
 
 ```ts
 fx.timeout(task, "5 seconds");
@@ -65,3 +66,6 @@ This delegates to `Effect.timeoutFail`.
 fx.timeout(task, "5 seconds", () => AppError.Timeout({ operation }));
 fx.timeoutFail(task, "5 seconds", () => AppError.Timeout({ operation }));
 ```
+
+Prefer the typed failure form when a timeout should be handled like other
+application errors.

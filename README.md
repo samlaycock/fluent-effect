@@ -1,20 +1,45 @@
 # fluent-effect
 
-An ergonomic house dialect over Effect.
+An ergonomic TypeScript API over Effect.
 
-`fluent-effect` keeps native Effect available, but gives application code a smaller, clearer vocabulary for tasks, typed errors, dependencies, concurrency, and runtime entrypoints.
+`fluent-effect` keeps native Effect available, but gives application code a
+smaller vocabulary for tasks, typed errors, dependencies, concurrency, and
+runtime entrypoints.
 
 ## Install
 
 ```bash
-bun install
+bun add fluent-effect effect
 ```
 
-## Validate
+`effect` is a peer dependency. Install it alongside `fluent-effect` so your
+application and this package share the same Effect runtime.
 
-```bash
-bun run typecheck
-bun run build
+## Quick Start
+
+```ts
+import { fx } from "fluent-effect";
+
+const AppError = fx.errors<{
+  NotFound: { id: string };
+}>();
+
+const loadUser = (id: string) =>
+  fx.task(function* () {
+    yield* fx.ensure(id.length > 0, () => AppError.NotFound({ id }));
+
+    return yield* fx.require(id === "1" ? { id, name: "Ada" } : null, () =>
+      AppError.NotFound({ id }),
+    );
+  });
+
+const result = await fx.runResult(loadUser("1"));
+
+if (result.ok) {
+  console.log(result.value.name);
+} else {
+  console.error(result.error);
+}
 ```
 
 ## Imports
@@ -33,7 +58,9 @@ import { Effect, Schedule, Duration } from "fluent-effect/effect";
 
 ## Recommended API
 
-Focused behavior notes live in [docs/](./docs/README.md).
+User documentation lives in [docs/](./docs/README.md). Start with
+[Core Concepts](./docs/concepts.md), then use the focused behavior pages when
+you need exact semantics.
 
 ### Create Tasks
 
@@ -109,12 +136,14 @@ Effect. Use `provideDependencyTask` only when the dependency implementation must
 running a Task.
 
 ```ts
+import type { Task } from "fluent-effect";
+
 interface Users {
-  readonly findById: (id: string) => fx.Task<User, NotFound>;
+  readonly findById: (id: string) => Task<User, NotFound>;
 }
 
 interface AuditLog {
-  readonly record: (message: string) => fx.Task<void>;
+  readonly record: (message: string) => Task<void>;
 }
 
 const Users = fx.dependency<Users>("Users");
@@ -192,6 +221,9 @@ fx.trace(task, "load-user", {
 
 ### Runtime
 
+See [docs/runtime.md](./docs/runtime.md) for choosing between Promise,
+throwing, result-object, exit, dependency-backed, and synchronous boundaries.
+
 ```ts
 fx.run(task);
 fx.runOrThrow(task);
@@ -227,7 +259,8 @@ import { Effect, Schedule, Layer } from "fluent-effect/effect";
 
 ## Examples
 
-Focused examples live in [examples/](./examples):
+Focused examples live in [examples/](./examples). A useful reading order is
+errors, dependencies, runtime, collections, then batch job.
 
 ```txt
 examples/dependencies.ts
@@ -239,6 +272,13 @@ examples/collections.ts
 examples/batch-job.ts
 examples/runtime.ts
 ```
+
+See [examples/README.md](./examples/README.md) for what each example covers.
+
+## API Reference
+
+See [docs/api-reference.md](./docs/api-reference.md) for the exported `fx`
+helpers and public types.
 
 ## Native-ish Aliases
 
@@ -293,4 +333,14 @@ src/errors.ts
 src/dependencies.ts
 src/logging.ts
 src/runtime.ts
+```
+
+## Contributing
+
+This repository uses Bun for package management and validation.
+
+```bash
+bun install
+bun run typecheck
+bun run build
 ```

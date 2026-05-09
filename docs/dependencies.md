@@ -9,8 +9,10 @@ Use `fx.dependency<T>(name)` to define a dependency tag. It is an alias for
 `fx.service` and Effect's `Context.GenericTag`.
 
 ```ts
+import type { Task } from "fluent-effect";
+
 interface Users {
-  readonly findById: (id: string) => fx.Task<User, NotFound>;
+  readonly findById: (id: string) => Task<User, NotFound>;
 }
 
 const Users = fx.dependency<Users>("Users");
@@ -21,12 +23,9 @@ of tags returns a readonly object with the same keys and resolved dependency
 values.
 
 ```ts
-const { users, audit } =
-  yield *
-  fx.getDependency({
-    users: Users,
-    audit: AuditLog,
-  });
+const deps = yield * fx.getDependency({ audit: AuditLog, users: Users });
+
+const { audit, users } = deps;
 ```
 
 Object lookup preserves string and symbol keys by using `Reflect.ownKeys`.
