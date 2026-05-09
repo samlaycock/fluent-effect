@@ -11,7 +11,8 @@ For testing conventions, see [TESTING.md](conventions/TESTING.md)
 
 For TypeScript conventions, see [TYPESCRIPT.md](conventions/TYPESCRIPT.md)
 
-For feature-specific behavior and interpreter gotchas, see the relevant files listed in [docs/](docs/README.md)
+For feature-specific behavior and interpreter gotchas, see the relevant files listed in [docs/](docs/README.md).
+When changing public API behavior, update the relevant docs page or add a new focused docs page and link it from [docs/README.md](docs/README.md).
 
 Ensure to ALWAYS include a changeset when making a pull request, and to include a detailed description of the changes made in the PR description.
 
