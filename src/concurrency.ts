@@ -60,11 +60,38 @@ export function each<I, A, E, R, C extends Concurrency>(
   return Effect.forEach(items, f, { concurrency: normalizeConcurrency(options?.concurrency) });
 }
 
+/** Map over a collection for effects only, discarding results. */
+export function eachDiscard<I, A, E, R>(
+  items: Iterable<I>,
+  f: (item: I, index: number) => Task<A, E, R>,
+): Task<void, E, R>;
+export function eachDiscard<I, A, E, R, C extends Concurrency>(
+  items: Iterable<I>,
+  f: (item: I, index: number) => Task<A, E, R>,
+  options: ExecutionOptions<C>,
+): Task<void, E, R>;
+export function eachDiscard<I, A, E, R, C extends Concurrency>(
+  items: Iterable<I>,
+  f: (item: I, index: number) => Task<A, E, R>,
+  options?: ExecutionOptions<C>,
+) {
+  return Effect.forEach(items, f, {
+    concurrency: normalizeConcurrency(options?.concurrency),
+    discard: true,
+  });
+}
+
 /** Helper: map over a collection with unbounded concurrency. */
 export const eachParallel = <I, A, E, R>(
   items: Iterable<I>,
   f: (item: I, index: number) => Task<A, E, R>,
 ) => each(items, f, { concurrency: true });
+
+/** Helper: map over a collection with unbounded concurrency and discard results. */
+export const eachDiscardParallel = <I, A, E, R>(
+  items: Iterable<I>,
+  f: (item: I, index: number) => Task<A, E, R>,
+) => eachDiscard(items, f, { concurrency: true });
 
 /** Helper: map over a collection with bounded concurrency. */
 export const eachLimit = <I, A, E, R>(
@@ -72,6 +99,13 @@ export const eachLimit = <I, A, E, R>(
   concurrency: number,
   f: (item: I, index: number) => Task<A, E, R>,
 ) => each(items, f, { concurrency: validateBoundedConcurrency(concurrency) });
+
+/** Helper: map over a collection with bounded concurrency and discard results. */
+export const eachDiscardLimit = <I, A, E, R>(
+  items: Iterable<I>,
+  concurrency: number,
+  f: (item: I, index: number) => Task<A, E, R>,
+) => eachDiscard(items, f, { concurrency: validateBoundedConcurrency(concurrency) });
 
 /** Alias: native Effect.all. Pass options explicitly for native behavior. */
 export const all = Effect.all;

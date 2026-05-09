@@ -147,6 +147,45 @@ describe("fx runtime behavior", () => {
     expect(maxActive).toBeGreaterThan(1);
   });
 
+  test("fx.eachDiscard runs effects and does not collect results", async () => {
+    const seen: number[] = [];
+
+    const result = await fx.run(
+      fx.eachDiscard([1, 2, 3], (n) =>
+        fx.sync(() => {
+          seen.push(n);
+          return n * 2;
+        }),
+      ),
+    );
+
+    expect(result).toBeUndefined();
+    expect(seen).toEqual([1, 2, 3]);
+  });
+
+  test("fx.eachDiscardParallel runs discarded work concurrently", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const seen: number[] = [];
+
+    const result = await fx.run(
+      fx.eachDiscardParallel([1, 2, 3], (n) =>
+        fx.task(function* () {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          yield* Effect.sleep("10 millis");
+          seen.push(n);
+          active -= 1;
+          return n;
+        }),
+      ),
+    );
+
+    expect(result).toBeUndefined();
+    expect(seen.sort((a, b) => a - b)).toEqual([1, 2, 3]);
+    expect(maxActive).toBeGreaterThan(1);
+  });
+
   test("fx.retryTimes retries failed tasks", async () => {
     let attempts = 0;
 
@@ -501,12 +540,46 @@ describe("fx runtime behavior", () => {
     expect(maxActive).toBe(2);
   });
 
+  test("fx.eachDiscardLimit respects bounded concurrency and discards results", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const seen: number[] = [];
+
+    const result = await fx.run(
+      fx.eachDiscardLimit([1, 2, 3, 4], 2, (n) =>
+        fx.task(function* () {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          yield* Effect.sleep("10 millis");
+          seen.push(n);
+          active -= 1;
+          return n;
+        }),
+      ),
+    );
+
+    expect(result).toBeUndefined();
+    expect(seen.sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+    expect(maxActive).toBe(2);
+  });
+
   test("fx.parallelLimit rejects invalid bounded concurrency", () => {
     const invalidLimits = [0, -1, Number.NaN, 1.5];
 
     for (const concurrency of invalidLimits) {
       expect(() => fx.parallelLimit([fx.succeed(1)], concurrency)).toThrow(RangeError);
       expect(() => fx.parallelLimit([fx.succeed(1)], concurrency)).toThrow(
+        "bounded concurrency must be a positive finite integer",
+      );
+    }
+  });
+
+  test("fx.eachDiscardLimit rejects invalid bounded concurrency", () => {
+    const invalidLimits = [0, -1, Number.NaN, 1.5];
+
+    for (const concurrency of invalidLimits) {
+      expect(() => fx.eachDiscardLimit([1], concurrency, (n) => fx.succeed(n))).toThrow(RangeError);
+      expect(() => fx.eachDiscardLimit([1], concurrency, (n) => fx.succeed(n))).toThrow(
         "bounded concurrency must be a positive finite integer",
       );
     }

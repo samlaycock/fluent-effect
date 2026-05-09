@@ -166,6 +166,18 @@ const eachLimit = fx.each([1, 2, 3], (n) => fx.ok(n > 1), {
 
 type _each_limit_result = Expect<Equal<TaskResult<typeof eachLimit>, boolean[]>>;
 
+const eachDiscard = fx.eachDiscard([1, 2, 3], (n) => fx.ok(String(n)));
+
+type _each_discard_result = Expect<Equal<TaskResult<typeof eachDiscard>, void>>;
+
+const eachDiscardParallel = fx.eachDiscardParallel([1, 2, 3], (n) => fx.ok(String(n)));
+
+type _each_discard_parallel_result = Expect<Equal<TaskResult<typeof eachDiscardParallel>, void>>;
+
+const eachDiscardLimit = fx.eachDiscardLimit([1, 2, 3], 2, (n) => fx.ok(n > 1));
+
+type _each_discard_limit_result = Expect<Equal<TaskResult<typeof eachDiscardLimit>, void>>;
+
 const andThen = fx.andThen(fx.ok("1"), (id): Task<User> => fx.ok({ ...user, id }));
 const onSuccess = fx.onSuccess(fx.ok(user), (loadedUser) =>
   fx.log("loaded", { id: loadedUser.id }),
