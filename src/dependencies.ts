@@ -43,7 +43,11 @@ export const getDependencies = <const Deps extends DependencyMap>(
   deps: Deps,
 ): Task<DependencyMapValues<Deps>, never, DependencyMapContext<Deps>> =>
   Effect.contextWith((context: Context.Context<DependencyMapContext<Deps>>) => {
-    const entries = Object.entries(deps).map(([key, tag]) => [key, Context.get(context, tag)]);
+    const entries = Reflect.ownKeys(deps).map((key) => {
+      const tag = deps[key as keyof Deps] as Context.Tag<any, any>;
+
+      return [key, Context.get(context, tag)];
+    });
 
     return Object.fromEntries(entries) as DependencyMapValues<Deps>;
   });
