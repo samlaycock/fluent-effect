@@ -1,5 +1,11 @@
 # fluent-effect
 
+## 0.1.1
+
+### Patch Changes
+
+- 3106e3f: Improve public package documentation with install guidance, quickstart examples, core concepts, runtime boundary guidance, and an API reference.
+
 ## 0.1.0
 
 ### Minor Changes
