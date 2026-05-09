@@ -81,6 +81,32 @@ describe("fx runtime behavior", () => {
     expect(result).toBe("Hello, Ada");
   });
 
+  test("fx.getDependencies supports symbol-keyed dependency maps", async () => {
+    interface Greeter {
+      readonly greet: (name: string) => string;
+    }
+
+    const Greeter = fx.dependency<Greeter>("SymbolGreeter");
+    const greeterKey = Symbol("greeter");
+
+    const program = fx.task(function* () {
+      const dependencies = yield* fx.getDependencies({
+        [greeterKey]: Greeter,
+      });
+
+      return dependencies[greeterKey].greet("Ada");
+    });
+
+    const result = await fx.runWith(
+      program,
+      fx.provideDependency(Greeter, {
+        greet: (name) => `Hello, ${name}`,
+      }),
+    );
+
+    expect(result).toBe("Hello, Ada");
+  });
+
   test("fx.each is sequential by default", async () => {
     let active = 0;
     let maxActive = 0;
