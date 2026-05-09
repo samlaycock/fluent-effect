@@ -28,9 +28,35 @@ export const error = <const Name extends string>(name: Name): ErrorFactory<Name>
     { type: name },
   );
 
+type ErrorSpec<Spec extends Record<string, object>> = {
+  readonly [Name in keyof Spec & string]: unknown;
+};
+
+const errorConstructor = (property: string) =>
+  Object.assign((fields: object = {}) => ({ ...fields, _tag: property }), {
+    type: property,
+  });
+
 /** Define a family of typed application error constructors. */
-export const errors = <Spec extends Record<string, object>>(): ErrorConstructors<Spec> =>
-  new Proxy(
+export const errors = <Spec extends Record<string, object>>(
+  spec?: ErrorSpec<Spec>,
+): ErrorConstructors<Spec> => {
+  const constructors = new Map<string, ReturnType<typeof errorConstructor>>();
+  const knownProperties = new Set(Object.keys(spec ?? {}));
+  const getConstructor = (property: string) => {
+    const existing = constructors.get(property);
+
+    if (existing) {
+      return existing;
+    }
+
+    const constructor = errorConstructor(property);
+    constructors.set(property, constructor);
+
+    return constructor;
+  };
+
+  return new Proxy(
     {},
     {
       get: (_target, property) => {
@@ -38,12 +64,25 @@ export const errors = <Spec extends Record<string, object>>(): ErrorConstructors
           return undefined;
         }
 
-        return Object.assign((fields: object = {}) => ({ ...fields, _tag: property }), {
-          type: property,
-        });
+        return getConstructor(property);
       },
+      getOwnPropertyDescriptor: (_target, property) => {
+        if (typeof property !== "string" || !knownProperties.has(property)) {
+          return undefined;
+        }
+
+        return {
+          configurable: true,
+          enumerable: true,
+          value: getConstructor(property),
+          writable: false,
+        };
+      },
+      has: (_target, property) => typeof property === "string" && knownProperties.has(property),
+      ownKeys: () => [...knownProperties],
     },
   ) as ErrorConstructors<Spec>;
+};
 
 type TryOptions<A, E> = {
   try: (signal: AbortSignal) => A | PromiseLike<A>;
