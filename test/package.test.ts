@@ -1,6 +1,6 @@
 import { $ } from "bun";
 import { describe, expect, test } from "bun:test";
-import { cp, mkdtemp, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -27,6 +27,8 @@ describe("package exports", () => {
 
     try {
       await cp(join(repositoryDirectory, "package.json"), join(packageWorkspace, "package.json"));
+      await cp(join(repositoryDirectory, "bun.lock"), join(packageWorkspace, "bun.lock"));
+      await cp(join(repositoryDirectory, "bunfig.toml"), join(packageWorkspace, "bunfig.toml"));
       await cp(join(repositoryDirectory, "tsconfig.json"), join(packageWorkspace, "tsconfig.json"));
       await cp(
         join(repositoryDirectory, "tsdown.config.mts"),
@@ -35,11 +37,8 @@ describe("package exports", () => {
       await cp(join(repositoryDirectory, "src"), join(packageWorkspace, "src"), {
         recursive: true,
       });
-      await symlink(
-        join(repositoryDirectory, "node_modules"),
-        join(packageWorkspace, "node_modules"),
-      );
 
+      await $`bun install --quiet`.cwd(packageWorkspace).quiet();
       await $`bun run build`.cwd(packageWorkspace).quiet();
       expect(await getModifiedMs(repositoryDistIndexPath)).toBe(
         repositoryDistModifiedMsBeforeBuild,
