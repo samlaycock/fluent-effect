@@ -1,18 +1,51 @@
 import { $ } from "bun";
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const getModifiedMs = async (path: string): Promise<number | undefined> => {
+  try {
+    return (await stat(path)).mtimeMs;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+};
+
 describe("package exports", () => {
   test("published root and effect exports resolve for ESM and CJS consumers", async () => {
-    await $`bun run build`.quiet();
-
     const consumerDirectory = await mkdtemp(join(tmpdir(), "fluent-effect-consumer-"));
     const packageDirectory = await mkdtemp(join(tmpdir(), "fluent-effect-package-"));
+    const packageWorkspace = await mkdtemp(join(tmpdir(), "fluent-effect-package-workspace-"));
+    const repositoryDirectory = join(import.meta.dir, "..");
+    const repositoryDistIndexPath = join(repositoryDirectory, "dist", "index.js");
+    const repositoryDistModifiedMsBeforeBuild = await getModifiedMs(repositoryDistIndexPath);
 
     try {
-      await $`bun pm pack --destination ${packageDirectory} --quiet`.quiet();
+      await cp(join(repositoryDirectory, "package.json"), join(packageWorkspace, "package.json"));
+      await cp(join(repositoryDirectory, "tsconfig.json"), join(packageWorkspace, "tsconfig.json"));
+      await cp(
+        join(repositoryDirectory, "tsdown.config.mts"),
+        join(packageWorkspace, "tsdown.config.mts"),
+      );
+      await cp(join(repositoryDirectory, "src"), join(packageWorkspace, "src"), {
+        recursive: true,
+      });
+      await symlink(
+        join(repositoryDirectory, "node_modules"),
+        join(packageWorkspace, "node_modules"),
+      );
+
+      await $`bun run build`.cwd(packageWorkspace).quiet();
+      expect(await getModifiedMs(repositoryDistIndexPath)).toBe(
+        repositoryDistModifiedMsBeforeBuild,
+      );
+
+      await $`bun pm pack --destination ${packageDirectory} --quiet`.cwd(packageWorkspace).quiet();
       const tarballName = (await readdir(packageDirectory)).find((file) => file.endsWith(".tgz"));
 
       if (tarballName === undefined) {
@@ -74,6 +107,7 @@ describe("package exports", () => {
     } finally {
       await rm(consumerDirectory, { recursive: true, force: true });
       await rm(packageDirectory, { recursive: true, force: true });
+      await rm(packageWorkspace, { recursive: true, force: true });
     }
   });
 });
