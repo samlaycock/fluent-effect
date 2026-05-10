@@ -45,7 +45,8 @@
     "oxlint": "1.63.0",
     "oxlint-tsgolint": "0.22.1",
     "tsdown": "0.22.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "unrun": "0.3.0"
   },
   "peerDependencies": {
     "effect": "^3.21.0"
