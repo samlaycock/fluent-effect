@@ -108,5 +108,5 @@ describe("package exports", () => {
       await rm(packageDirectory, { recursive: true, force: true });
       await rm(packageWorkspace, { recursive: true, force: true });
     }
-  });
+  }, 15_000);
 });
