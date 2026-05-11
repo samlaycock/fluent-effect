@@ -42,6 +42,14 @@ const validateBoundedConcurrency = (concurrency: number) => {
 const normalizeConcurrency = (concurrency: Concurrency | undefined) =>
   concurrency === true ? "unbounded" : validateBoundedConcurrency(concurrency ?? 1);
 
+const validateRetryTimes = (times: number) => {
+  if (!Number.isFinite(times) || !Number.isInteger(times) || times < 0) {
+    throw new RangeError("retry times must be a non-negative finite integer");
+  }
+
+  return times;
+};
+
 /** Map over a collection. Sequential by default; pass concurrency for parallel work. */
 export function each<I, A, E, R>(
   items: Iterable<I>,
@@ -214,7 +222,7 @@ export function retry<A, E, R, B, R1>(
 
 /** Helper: retry a task a fixed number of times. */
 export const retryTimes = <A, E, R>(self: Task<A, E, R>, times: number): Task<A, E, R> =>
-  Effect.retry(self, Schedule.recurs(times));
+  Effect.retry(self, Schedule.recurs(validateRetryTimes(times)));
 
 /** Helper: retry a task with exponential backoff, optionally capped by attempts. */
 export const retryBackoff = <A, E, R>(
@@ -231,7 +239,10 @@ export const retryBackoff = <A, E, R>(
     return Effect.retry(self, backoff);
   }
 
-  return Effect.retry(self, Schedule.intersect(backoff, Schedule.recurs(options.times)));
+  return Effect.retry(
+    self,
+    Schedule.intersect(backoff, Schedule.recurs(validateRetryTimes(options.times))),
+  );
 };
 
 /** Add a timeout to a Task, optionally failing with a typed error. */

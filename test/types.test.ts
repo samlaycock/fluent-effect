@@ -194,9 +194,15 @@ const retriedTimes = fx.retryTimes(
   fx.fail(new NetworkError("nope")) as Task<User, NetworkError>,
   3,
 );
+const retriedZeroTimes = fx.retryTimes(
+  fx.fail(new NetworkError("nope")) as Task<User, NetworkError>,
+  0,
+);
 
 type _retry_times_result = Expect<Equal<TaskResult<typeof retriedTimes>, User>>;
 type _retry_times_error = Expect<Equal<TaskError<typeof retriedTimes>, NetworkError>>;
+type _retry_zero_times_result = Expect<Equal<TaskResult<typeof retriedZeroTimes>, User>>;
+type _retry_zero_times_error = Expect<Equal<TaskError<typeof retriedZeroTimes>, NetworkError>>;
 
 const retriedBackoff = fx.retryBackoff(
   fx.fail(new NetworkError("nope")) as Task<User, NetworkError>,
