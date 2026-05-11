@@ -79,5 +79,7 @@ provides a full layer.
 promise.
 
 `fx.app(dependencies)` creates a reusable boundary with `provide`, async run
-helpers, sync run helpers, result helpers, and exit helpers. Use it at
-application edges when many tasks share the same dependency environment.
+helpers, sync run helpers, result helpers, and exit helpers. Its run helpers
+reuse the dependency environment across repeated runs for the same app instance.
+Use it at application edges when many tasks share the same dependency
+environment.

@@ -45,7 +45,10 @@ try {
 
 ## Reusable Applications
 
-`fx.app(dependencies)` creates a reusable boundary around a layer.
+`fx.app(dependencies)` creates a reusable boundary around a layer. The app's
+run methods acquire the layer through a managed runtime and reuse that
+environment across repeated runs, so expensive layer startup work is performed
+once per app instance instead of once per task execution.
 
 ```ts
 const app = fx.app(dependencies);
@@ -55,7 +58,9 @@ await app.runResult(loadUser("2"));
 ```
 
 Use `app.provide(task)` when you want to provide dependencies but keep the task
-lazy for later composition.
+lazy for later composition. `app.provide(task)` does not force the app runtime
+to start; the returned task remains lazy and follows normal `Effect.provide`
+semantics when it is eventually run.
 
 ## Synchronous Runners
 

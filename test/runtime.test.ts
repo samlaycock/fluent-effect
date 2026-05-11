@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { Effect } from "../src/effect";
+import { Effect, Layer } from "../src/effect";
 import { fx, type ErrorsOf, type Task } from "../src/index";
 
 describe("fx runtime behavior", () => {
@@ -318,6 +318,33 @@ describe("fx runtime behavior", () => {
 
     expect(await app.run(program)).toBe(123);
     expect(await app.runExit(program)).toMatchObject({ _tag: "Success" });
+  });
+
+  test("fx.app reuses layer acquisition across runs", async () => {
+    interface Counter {
+      readonly value: number;
+    }
+
+    const Counter = fx.dependency<Counter>("Counter");
+    let acquisitions = 0;
+    const app = fx.app(
+      Layer.effect(
+        Counter,
+        Effect.sync(() => {
+          acquisitions += 1;
+          return { value: acquisitions };
+        }),
+      ),
+    );
+
+    const program = fx.task(function* () {
+      const counter = yield* fx.getDependency(Counter);
+      return counter.value;
+    });
+
+    expect(await app.run(program)).toBe(1);
+    expect(await app.run(program)).toBe(1);
+    expect(acquisitions).toBe(1);
   });
 
   test("fx.getDependency can retrieve several dependencies as a named object", async () => {
