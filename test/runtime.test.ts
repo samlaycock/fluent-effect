@@ -757,6 +757,28 @@ describe("fx runtime behavior", () => {
     expect(attempts).toBe(2);
   });
 
+  test("fx.retry rejects invalid times synchronously", () => {
+    const task = fx.succeed("ok");
+
+    for (const times of [-1, 1.5, Number.POSITIVE_INFINITY]) {
+      expect(() => fx.retry(task, { times })).toThrow(RangeError);
+      expect(() => fx.retry(task, { times })).toThrow(
+        "retry times must be a non-negative finite integer",
+      );
+    }
+  });
+
+  test("fx.retryTimes rejects invalid retry counts synchronously", () => {
+    const task = fx.succeed("ok");
+
+    for (const times of [-1, 1.5, Number.POSITIVE_INFINITY]) {
+      expect(() => fx.retryTimes(task, times)).toThrow(RangeError);
+      expect(() => fx.retryTimes(task, times)).toThrow(
+        "retry times must be a non-negative finite integer",
+      );
+    }
+  });
+
   test("fx.retry treats empty options as zero retries", async () => {
     let attempts = 0;
     const error = new Error("again");
@@ -918,6 +940,38 @@ describe("fx runtime behavior", () => {
 
     expect(result).toBe("done");
     expect(attempts).toBe(2);
+  });
+
+  test("fx.retryBackoff rejects invalid retry counts synchronously", () => {
+    const task = fx.succeed("ok");
+
+    for (const times of [-1, 1.5, Number.POSITIVE_INFINITY]) {
+      expect(() => fx.retryBackoff(task, { base: "100 millis", times })).toThrow(RangeError);
+      expect(() => fx.retryBackoff(task, { base: "100 millis", times })).toThrow(
+        "retry times must be a non-negative finite integer",
+      );
+    }
+  });
+
+  test("fx.retryBackoff accepts zero retries", async () => {
+    let attempts = 0;
+    const error = new Error("again");
+
+    const result = await fx.runResult(
+      fx.retryBackoff(
+        fx.trySync({
+          try: () => {
+            attempts += 1;
+            throw error;
+          },
+          catch: (cause) => cause,
+        }),
+        { base: "1 millis", times: 0 },
+      ),
+    );
+
+    expect(result).toEqual({ ok: false, error });
+    expect(attempts).toBe(1);
   });
 
   test("fx.layerSync and fx.mergeLayers provide multiple dependencies", async () => {

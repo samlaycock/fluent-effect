@@ -13,10 +13,15 @@ For example, `times: 3` can run the task once initially and then retry up to
 three additional times.
 
 If `times` is omitted and no backoff is provided, the helper retries zero times.
+Provided `times` values must be non-negative finite integers. Invalid values
+throw a synchronous `RangeError` with the message
+`retry times must be a non-negative finite integer`. `times: 0` is valid and
+means no retries after the initial attempt.
 
 ```ts
 fx.retry(task, { times: 3 });
 fx.retryTimes(task, 3);
+fx.retryTimes(task, 0);
 ```
 
 ## Backoff
