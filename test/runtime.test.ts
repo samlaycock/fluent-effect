@@ -519,6 +519,18 @@ describe("fx runtime behavior", () => {
     expect(result).toBe("HELLO");
   });
 
+  test("fx.withDependency can provide undefined as a dependency value", async () => {
+    const OptionalFlag = fx.dependency<undefined>("OptionalFlag");
+
+    const program = fx.task(function* () {
+      return yield* fx.getDependency(OptionalFlag);
+    });
+
+    const result = await fx.run(fx.withDependency(program, OptionalFlag, undefined));
+
+    expect(result).toBeUndefined();
+  });
+
   test("fx.parallelLimit respects bounded concurrency for task collections", async () => {
     let active = 0;
     let maxActive = 0;

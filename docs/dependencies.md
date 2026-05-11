@@ -70,7 +70,8 @@ const dependencies = fx.dependencies(
 ```
 
 `fx.withDependency(task, tag, value)` provides one implementation directly to a
-task. `fx.withDependency(task, layer)` provides a full layer.
+task, including when `value` is `undefined`. `fx.withDependency(task, layer)`
+provides a full layer.
 
 ## Runtime Wiring
 
