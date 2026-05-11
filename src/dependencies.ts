@@ -95,9 +95,9 @@ export function withDependency<A, E, R, I, S, ROut, E2, RIn>(
   tagOrDependencyEnvironment: Context.Tag<I, S> | Layer.Layer<ROut, E2, RIn>,
   impl?: S,
 ) {
-  return impl === undefined
+  return arguments.length === 2
     ? Effect.provide(self, tagOrDependencyEnvironment as Layer.Layer<ROut, E2, RIn>)
-    : Effect.provideService(self, tagOrDependencyEnvironment as Context.Tag<I, S>, impl);
+    : Effect.provideService(self, tagOrDependencyEnvironment as Context.Tag<I, S>, impl as S);
 }
 
 /** Alias: provide a Layer, Context, Runtime, or ManagedRuntime to a Task. */
