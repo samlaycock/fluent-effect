@@ -1,7 +1,60 @@
 import { describe, expect, test } from "bun:test";
 
-import { Effect, Layer } from "../src/effect";
+import { Deferred, Effect, Fiber, Layer, Ref } from "../src/effect";
 import { fx, type ErrorsOf, type Task } from "../src/index";
+
+const makeInterruptibleTask = (
+  startedCount: Ref.Ref<number>,
+  finalizedCount: Ref.Ref<number>,
+  allStarted: Deferred.Deferred<void>,
+  allFinalized: Deferred.Deferred<void>,
+  expectedStarted: number,
+) =>
+  Effect.acquireUseRelease(
+    Ref.updateAndGet(startedCount, (count) => count + 1).pipe(
+      Effect.tap((count) =>
+        count === expectedStarted ? Deferred.succeed(allStarted, undefined) : Effect.void,
+      ),
+    ),
+    () => Effect.never,
+    () =>
+      Ref.updateAndGet(finalizedCount, (count) => count + 1).pipe(
+        Effect.tap((count) =>
+          count === expectedStarted ? Deferred.succeed(allFinalized, undefined) : Effect.void,
+        ),
+      ),
+  );
+
+const expectParentInterruptFinalizesStartedChildren = (
+  expectedStarted: number,
+  makeProgram: (task: Task<never, never, never>) => Task<unknown, unknown, never>,
+) =>
+  fx.run(
+    Effect.gen(function* () {
+      const startedCount = yield* Ref.make(0);
+      const finalizedCount = yield* Ref.make(0);
+      const allStarted = yield* Deferred.make<void>();
+      const allFinalized = yield* Deferred.make<void>();
+      const task = makeInterruptibleTask(
+        startedCount,
+        finalizedCount,
+        allStarted,
+        allFinalized,
+        expectedStarted,
+      );
+
+      const fiber = yield* Effect.fork(makeProgram(task));
+
+      yield* Deferred.await(allStarted);
+      yield* Fiber.interrupt(fiber);
+      yield* Deferred.await(allFinalized);
+
+      return {
+        finalized: yield* Ref.get(finalizedCount),
+        started: yield* Ref.get(startedCount),
+      };
+    }),
+  );
 
 describe("fx runtime behavior", () => {
   test("fx.try catches synchronous throws", async () => {
@@ -608,6 +661,38 @@ describe("fx runtime behavior", () => {
 
     expect(result).toEqual([1, 2, 3, 4]);
     expect(maxActive).toBe(2);
+  });
+
+  test("fx.sequence interrupts the active sequential child", async () => {
+    const result = await expectParentInterruptFinalizesStartedChildren(1, (task) =>
+      fx.sequence([task, task, task]),
+    );
+
+    expect(result).toEqual({ finalized: 1, started: 1 });
+  });
+
+  test("fx.parallel interrupts all unbounded child tasks", async () => {
+    const result = await expectParentInterruptFinalizesStartedChildren(3, (task) =>
+      fx.parallel([task, task, task]),
+    );
+
+    expect(result).toEqual({ finalized: 3, started: 3 });
+  });
+
+  test("fx.eachLimit interrupts only started bounded child tasks", async () => {
+    const result = await expectParentInterruptFinalizesStartedChildren(2, (task) =>
+      fx.eachLimit([1, 2, 3, 4], 2, () => task),
+    );
+
+    expect(result).toEqual({ finalized: 2, started: 2 });
+  });
+
+  test("fx.eachDiscardParallel interrupts all discarded child tasks", async () => {
+    const result = await expectParentInterruptFinalizesStartedChildren(3, (task) =>
+      fx.eachDiscardParallel([1, 2, 3], () => task),
+    );
+
+    expect(result).toEqual({ finalized: 3, started: 3 });
   });
 
   test("fx.eachDiscardLimit respects bounded concurrency and discards results", async () => {
