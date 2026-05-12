@@ -17,6 +17,13 @@ const getModifiedMs = async (path: string): Promise<number | undefined> => {
 };
 
 describe("package exports", () => {
+  test("package metadata declares modules as side-effect free", async () => {
+    const repositoryDirectory = join(import.meta.dir, "..");
+    const packageJson = await Bun.file(join(repositoryDirectory, "package.json")).json();
+
+    expect(packageJson.sideEffects).toBe(false);
+  });
+
   test("published root and effect exports resolve for ESM and CJS consumers", async () => {
     const consumerDirectory = await mkdtemp(join(tmpdir(), "fluent-effect-consumer-"));
     const packageDirectory = await mkdtemp(join(tmpdir(), "fluent-effect-package-"));
