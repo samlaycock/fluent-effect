@@ -17,11 +17,12 @@ const program = fx.acquireUseRelease(
       catch: (cause) => ({ _tag: "QueryFailed" as const, cause }),
     }),
   (connection, exit) =>
-    fx.try({
-      try: () => connection.close({ failed: exit._tag === "Failure" }),
-      catch: (cause) => {
+    fx.sync(() => {
+      try {
+        connection.close({ failed: exit._tag === "Failure" });
+      } catch (cause) {
         console.error("connection cleanup failed", cause);
-      },
+      }
     }),
 );
 ```
