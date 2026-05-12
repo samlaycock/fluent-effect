@@ -46,8 +46,16 @@ const expectParentInterruptFinalizesStartedChildren = (
       const fiber = yield* Effect.fork(makeProgram(task));
 
       yield* Deferred.await(allStarted);
-      yield* Fiber.interrupt(fiber);
-      yield* Deferred.await(allFinalized);
+      yield* Effect.timeoutFail(
+        Fiber.interrupt(fiber).pipe(Effect.zipRight(Deferred.await(allFinalized))),
+        {
+          duration: "1 second",
+          onTimeout: () =>
+            new Error(
+              `Timed out waiting for ${expectedStarted} started child task(s) to finalize after parent interruption`,
+            ),
+        },
+      );
 
       return {
         finalized: yield* Ref.get(finalizedCount),
