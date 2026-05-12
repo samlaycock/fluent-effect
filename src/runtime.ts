@@ -1,8 +1,18 @@
-import { Effect, Layer, ManagedRuntime } from "effect";
+import { Cause, Effect, Layer, ManagedRuntime, Runtime } from "effect";
 
 import type { Result, Task } from "./types.js";
 
 type RunnableTask<RIn, ROut, A, E> = [RIn] extends [never] ? Task<A, E, ROut> : never;
+
+const fiberFailureToResult = <A, E>(cause: Cause.Cause<E>): Result<A, E> => {
+  const failure = Cause.failureOption(cause);
+
+  if (failure._tag === "Some") {
+    return { ok: false, error: failure.value };
+  }
+
+  throw Cause.squash(cause);
+};
 
 /** Run a fully-provided Task and get back a Promise. */
 export const run = Effect.runPromise;
@@ -90,13 +100,21 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       return result.right;
     },
     runResult: async <A, E>(self: RunnableTask<RIn, ROut, A, E>): Promise<Result<A, E | E2>> => {
-      const result = await runtime.runPromise(Effect.either(self));
+      try {
+        const result = await runtime.runPromise(Effect.either(self));
 
-      if (result._tag === "Left") {
-        return { ok: false, error: result.left };
+        if (result._tag === "Left") {
+          return { ok: false, error: result.left };
+        }
+
+        return { ok: true, value: result.right };
+      } catch (cause) {
+        if (Runtime.isFiberFailure(cause)) {
+          return fiberFailureToResult(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+        }
+
+        throw cause;
       }
-
-      return { ok: true, value: result.right };
     },
     runSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSync(self),
     runOrThrowSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
@@ -109,13 +127,21 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       return result.right;
     },
     runResultSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>): Result<A, E | E2> => {
-      const result = runtime.runSync(Effect.either(self));
+      try {
+        const result = runtime.runSync(Effect.either(self));
 
-      if (result._tag === "Left") {
-        return { ok: false, error: result.left };
+        if (result._tag === "Left") {
+          return { ok: false, error: result.left };
+        }
+
+        return { ok: true, value: result.right };
+      } catch (cause) {
+        if (Runtime.isFiberFailure(cause)) {
+          return fiberFailureToResult(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+        }
+
+        throw cause;
       }
-
-      return { ok: true, value: result.right };
     },
     runExit: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runPromiseExit(self),
     runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSyncExit(self),
