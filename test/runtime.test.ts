@@ -592,6 +592,91 @@ describe("fx runtime behavior", () => {
     expect(signalWasAborted).toBe(true);
   });
 
+  test("fx.acquireUseRelease releases resources after success", async () => {
+    const events: string[] = [];
+
+    const result = await fx.run(
+      fx.acquireUseRelease(
+        fx.sync(() => {
+          events.push("acquire");
+          return "resource";
+        }),
+        (resource) =>
+          fx.sync(() => {
+            events.push(`use:${resource}`);
+            return "done";
+          }),
+        (resource, exit) =>
+          fx.sync(() => {
+            events.push(`release:${resource}:${exit._tag}`);
+          }),
+      ),
+    );
+
+    expect(result).toBe("done");
+    expect(events).toEqual(["acquire", "use:resource", "release:resource:Success"]);
+  });
+
+  test("fx.acquireUseRelease releases resources after failure", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const events: string[] = [];
+
+    const result = await fx.runExit(
+      fx.acquireUseRelease(
+        fx.sync(() => {
+          events.push("acquire");
+          return "resource";
+        }),
+        (resource) =>
+          fx.task(function* () {
+            events.push(`use:${resource}`);
+            return yield* fx.fail(AppError.Boom({ message: "bad" }));
+          }),
+        (resource, exit) =>
+          fx.sync(() => {
+            events.push(`release:${resource}:${exit._tag}`);
+          }),
+      ),
+    );
+
+    expect(result._tag).toBe("Failure");
+    expect(events).toEqual(["acquire", "use:resource", "release:resource:Failure"]);
+  });
+
+  test("fx.bracket releases resources after interruption", async () => {
+    const result = await fx.run(
+      Effect.gen(function* () {
+        const released = yield* Deferred.make<void>();
+
+        const fiber = yield* Effect.fork(
+          fx.bracket(
+            fx.succeed("resource"),
+            () => Effect.never,
+            (resource, exit) =>
+              fx
+                .sync(() => {
+                  expect(resource).toBe("resource");
+                  expect(exit._tag).toBe("Failure");
+                })
+                .pipe(Effect.zipRight(Deferred.succeed(released, undefined))),
+          ),
+        );
+
+        yield* Effect.timeoutFail(
+          Fiber.interrupt(fiber).pipe(Effect.zipRight(Deferred.await(released))),
+          {
+            duration: "1 second",
+            onTimeout: () => new Error("Timed out waiting for interrupted bracket to release"),
+          },
+        );
+
+        return "released";
+      }),
+    );
+
+    expect(result).toBe("released");
+  });
+
   test("fx.onSuccess and fx.onFailure run hooks without changing the original result", async () => {
     const AppError = fx.errors<{ Boom: { message: string } }>();
     const events: string[] = [];

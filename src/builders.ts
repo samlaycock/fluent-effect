@@ -99,3 +99,9 @@ export const _try = <A, E>(options: TryOptions<A, E>): Task<A, E> =>
 /** Wrap a synchronous function that might throw into a Task. */
 export const trySync = <A, E>(options: { try: () => A; catch: (e: unknown) => E }): Task<A, E> =>
   Effect.try(options);
+
+/** Acquire a resource, use it, and release it on success, failure, or interruption. */
+export const acquireUseRelease = Effect.acquireUseRelease;
+
+/** Alias for acquire-use-release resource safety. */
+export const bracket = acquireUseRelease;

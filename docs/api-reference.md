@@ -16,6 +16,8 @@ import { fx } from "fluent-effect";
 | `fx.fail`                | Create a failed task.                                                 |
 | `fx.try`                 | Convert throwing or rejecting code into a typed task.                 |
 | `fx.trySync`             | Convert synchronous throwing code into a synchronously runnable task. |
+| `fx.acquireUseRelease`   | Acquire, use, and release a resource safely.                          |
+| `fx.bracket`             | Alias for `fx.acquireUseRelease`.                                     |
 
 ## Errors
 
