@@ -965,6 +965,25 @@ describe("fx runtime behavior", () => {
     expect(app.runResultSync(success)).toEqual({ ok: true, value: "provided" });
   });
 
+  test("fx.app runResult captures dependency layer failures", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("Env");
+    const AppError = fx.errors<{ ConfigError: { message: string } }>();
+    const error = AppError.ConfigError({ message: "missing config" });
+    const app = fx.app(fx.layer(Env, fx.fail(error)));
+
+    const program = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+
+    expect(await app.runResult(program)).toEqual({ ok: false, error });
+    expect(app.runResultSync(program)).toEqual({ ok: false, error });
+  });
+
   test("fx.timeout fails slow tasks with Effect's timeout error", async () => {
     const result = await fx.runExit(fx.timeout(Effect.sleep("20 millis"), "1 millis"));
 
