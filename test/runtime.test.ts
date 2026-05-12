@@ -965,7 +965,7 @@ describe("fx runtime behavior", () => {
     expect(app.runResultSync(success)).toEqual({ ok: true, value: "provided" });
   });
 
-  test("fx.app runResult captures dependency layer failures", async () => {
+  test("fx.app boundary helpers unwrap dependency layer failures", async () => {
     interface Env {
       readonly value: string;
     }
@@ -980,6 +980,13 @@ describe("fx runtime behavior", () => {
       return env.value;
     });
 
+    expect(
+      await app.runOrThrow(program).then(
+        () => "unexpected success",
+        (cause) => cause,
+      ),
+    ).toBe(error);
+    expect(() => app.runOrThrowSync(program)).toThrow(error);
     expect(await app.runResult(program)).toEqual({ ok: false, error });
     expect(app.runResultSync(program)).toEqual({ ok: false, error });
   });

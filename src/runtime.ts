@@ -4,6 +4,16 @@ import type { Result, Task } from "./types.js";
 
 type RunnableTask<RIn, ROut, A, E> = [RIn] extends [never] ? Task<A, E, ROut> : never;
 
+const throwFiberFailure = <E>(cause: Cause.Cause<E>): never => {
+  const failure = Cause.failureOption(cause);
+
+  if (failure._tag === "Some") {
+    throw failure.value;
+  }
+
+  throw Cause.squash(cause);
+};
+
 const fiberFailureToResult = <A, E>(cause: Cause.Cause<E>): Result<A, E> => {
   const failure = Cause.failureOption(cause);
 
@@ -91,13 +101,21 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
     provide,
     run: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runPromise(self),
     runOrThrow: async <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
-      const result = await runtime.runPromise(Effect.either(self));
+      try {
+        const result = await runtime.runPromise(Effect.either(self));
 
-      if (result._tag === "Left") {
-        throw result.left;
+        if (result._tag === "Left") {
+          throw result.left;
+        }
+
+        return result.right;
+      } catch (cause) {
+        if (Runtime.isFiberFailure(cause)) {
+          throwFiberFailure(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+        }
+
+        throw cause;
       }
-
-      return result.right;
     },
     runResult: async <A, E>(self: RunnableTask<RIn, ROut, A, E>): Promise<Result<A, E | E2>> => {
       try {
@@ -118,13 +136,21 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
     },
     runSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSync(self),
     runOrThrowSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
-      const result = runtime.runSync(Effect.either(self));
+      try {
+        const result = runtime.runSync(Effect.either(self));
 
-      if (result._tag === "Left") {
-        throw result.left;
+        if (result._tag === "Left") {
+          throw result.left;
+        }
+
+        return result.right;
+      } catch (cause) {
+        if (Runtime.isFiberFailure(cause)) {
+          throwFiberFailure(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+        }
+
+        throw cause;
       }
-
-      return result.right;
     },
     runResultSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>): Result<A, E | E2> => {
       try {
