@@ -85,6 +85,39 @@ const syncWrapped = fx.trySync({
 type _try_sync_result = Expect<Equal<TaskResult<typeof syncWrapped>, User>>;
 type _try_sync_error = Expect<Equal<TaskError<typeof syncWrapped>, NetworkError>>;
 
+interface ReleaseAudit {
+  readonly record: (message: string) => Task<void>;
+}
+
+const ReleaseAudit = fx.dependency<ReleaseAudit>("ReleaseAudit");
+
+const resourceManaged = fx.acquireUseRelease(
+  fx.trySync({
+    try: () => ({ id: "resource" }),
+    catch: (cause) => new NetworkError(cause),
+  }),
+  (resource) => (resource.id === user.id ? fx.ok(user) : fx.fail(new NotFound(resource.id))),
+  (resource, exit) =>
+    fx.task(function* () {
+      const audit = yield* fx.getDependency(ReleaseAudit);
+      yield* audit.record(`${resource.id}:${exit._tag}`);
+    }),
+);
+
+const bracketManaged = fx.bracket(
+  fx.ok({ id: "resource" }),
+  (resource) => fx.ok(resource.id),
+  () => fx.ok(undefined),
+);
+
+type _acquire_use_release_result = Expect<Equal<TaskResult<typeof resourceManaged>, User>>;
+type _acquire_use_release_error = Expect<
+  Equal<TaskError<typeof resourceManaged>, NetworkError | NotFound>
+>;
+type _acquire_use_release_deps = Expect<Equal<TaskDeps<typeof resourceManaged>, ReleaseAudit>>;
+type _bracket_result = Expect<Equal<TaskResult<typeof bracketManaged>, string>>;
+type _bracket_error = Expect<Equal<TaskError<typeof bracketManaged>, never>>;
+
 const succeeded = fx.succeed(user);
 const fromSync = fx.fromSync(() => user);
 

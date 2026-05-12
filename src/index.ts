@@ -49,6 +49,8 @@ export const fx = {
   errors: builders.errors,
   try: builders._try,
   trySync: builders.trySync,
+  acquireUseRelease: builders.acquireUseRelease,
+  bracket: builders.bracket,
 
   // Combinators
   map: concurrency.map,

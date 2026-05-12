@@ -21,6 +21,8 @@ that differ from raw Effect defaults.
   provider helpers, layer composition, and runtime application wiring.
 - [Concurrency](./concurrency.md) covers sequential defaults, unbounded
   concurrency, bounded concurrency, and discard traversal helpers.
+- [Resource Safety](./resources.md) covers acquire/use/release workflows and
+  when to use the native Effect escape hatch.
 - [Retry and Timeout](./retry-timeout.md) covers retry attempt counting,
   backoff options, native schedules, and timeout failure behavior.
 - [Package Exports](./package-exports.md) covers the package entrypoints and
