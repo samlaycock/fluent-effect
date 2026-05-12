@@ -50,6 +50,8 @@ describe("package exports", () => {
       expect(await getModifiedMs(repositoryDistIndexPath)).toBe(
         repositoryDistModifiedMsBeforeBuild,
       );
+      expect(await Bun.file(join(packageWorkspace, "dist", "index.js.map")).exists()).toBe(true);
+      expect(await Bun.file(join(packageWorkspace, "dist", "index.mjs.map")).exists()).toBe(true);
 
       await $`bun pm pack --destination ${packageDirectory} --quiet`.cwd(packageWorkspace).quiet();
       const tarballName = (await readdir(packageDirectory)).find((file) => file.endsWith(".tgz"));
@@ -108,6 +110,16 @@ describe("package exports", () => {
       expect(
         await Bun.file(
           join(consumerDirectory, "node_modules", "fluent-effect", "dist", "effect.mjs"),
+        ).exists(),
+      ).toBe(true);
+      expect(
+        await Bun.file(
+          join(consumerDirectory, "node_modules", "fluent-effect", "dist", "index.js.map"),
+        ).exists(),
+      ).toBe(true);
+      expect(
+        await Bun.file(
+          join(consumerDirectory, "node_modules", "fluent-effect", "dist", "index.mjs.map"),
         ).exists(),
       ).toBe(true);
     } finally {
