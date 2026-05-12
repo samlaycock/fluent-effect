@@ -5,18 +5,25 @@ interface User {
   readonly name: string;
 }
 
+interface UserApi {
+  readonly fetchUser: (id: string, signal: AbortSignal) => Promise<User>;
+}
+
 const AppError = fx.errors<{
   NetworkError: { cause: unknown };
   TimeoutError: { operation: string };
 }>();
 
+const UserApi = fx.dependency<UserApi>("UserApi");
+
 const fetchUser = (id: string) =>
-  fx.try({
-    try: async (signal) => {
-      const response = await fetch(`https://example.com/users/${id}`, { signal });
-      return (await response.json()) as User;
-    },
-    catch: (cause) => AppError.NetworkError({ cause }),
+  fx.task(function* () {
+    const userApi = yield* fx.getDependency(UserApi);
+
+    return yield* fx.try({
+      try: (signal) => userApi.fetchUser(id, signal),
+      catch: (cause) => AppError.NetworkError({ cause }),
+    });
   });
 
 const loadUser = (id: string) =>
@@ -48,4 +55,8 @@ const loadUsers = (ids: readonly string[]) =>
     return users;
   });
 
-export const main = fx.run(loadUsers(["1", "2", "3"]));
+const testUserApi = fx.provideDependency(UserApi, {
+  fetchUser: async (id) => ({ id, name: `User ${id}` }),
+});
+
+export const main = fx.runWith(loadUsers(["1", "2", "3"]), fx.dependencies(testUserApi));
