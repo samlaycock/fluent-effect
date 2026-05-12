@@ -55,12 +55,19 @@ const app = fx.app(dependencies);
 
 await app.run(loadUser("1"));
 await app.runResult(loadUser("2"));
+await app.dispose();
 ```
 
 Use `app.provide(task)` when you want to provide dependencies but keep the task
 lazy for later composition. `app.provide(task)` does not force the app runtime
 to start; the returned task remains lazy and follows normal `Effect.provide`
 semantics when it is eventually run.
+
+Call `app.dispose()` during shutdown when the app is no longer needed. This
+releases scoped resources acquired by the dependency layer, such as database
+connections, file handles, or HTTP clients with finalizers. The returned app
+also implements `[Symbol.asyncDispose]`, so runtimes that support explicit
+resource management can dispose it automatically.
 
 ## Synchronous Runners
 

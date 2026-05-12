@@ -347,6 +347,37 @@ describe("fx runtime behavior", () => {
     expect(acquisitions).toBe(1);
   });
 
+  test("fx.app dispose releases scoped layer resources", async () => {
+    interface Connection {
+      readonly id: number;
+    }
+
+    const Connection = fx.dependency<Connection>("Connection");
+    let releases = 0;
+    const app = fx.app(
+      Layer.scoped(
+        Connection,
+        Effect.acquireRelease(Effect.succeed({ id: 1 }), () =>
+          Effect.sync(() => {
+            releases += 1;
+          }),
+        ),
+      ),
+    );
+
+    const program = fx.task(function* () {
+      const connection = yield* fx.getDependency(Connection);
+      return connection.id;
+    });
+
+    expect(await app.run(program)).toBe(1);
+    expect(releases).toBe(0);
+
+    await app.dispose();
+
+    expect(releases).toBe(1);
+  });
+
   test("fx.getDependency can retrieve several dependencies as a named object", async () => {
     interface Config {
       readonly prefix: string;

@@ -119,5 +119,7 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
     },
     runExit: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runPromiseExit(self),
     runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSyncExit(self),
+    dispose: () => runtime.dispose(),
+    [Symbol.asyncDispose]: () => runtime.dispose(),
   } as const;
 };
