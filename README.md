@@ -199,9 +199,10 @@ fx.eachDiscard(items, fn, { concurrency: 5 });
 Omit `concurrency` for sequential work, use `true` to turn parallelism on without a limit, or pass a number to bound parallelism.
 Use `eachDiscard` for fire-and-discard traversal over large collections when you need the effects but not the collected result array.
 
-### Retry, Timeout, Tracing
+### Retry, Timeout, Logging, Tracing
 
 See [docs/retry-timeout.md](./docs/retry-timeout.md) for retry attempt counting, backoff behavior, native schedules, and timeout failures.
+See [docs/logging-tracing.md](./docs/logging-tracing.md) for structured log metadata, span attributes, and native Effect instrumentation boundaries.
 
 ```ts
 fx.retry(task, { times: 3 });
@@ -213,6 +214,8 @@ fx.retry(task, {
 });
 
 fx.timeout(task, "5 seconds", () => AppError.Timeout({ operation }));
+
+fx.log("Loading user", { userId });
 
 fx.trace(task, "load-user", {
   attributes: { userId },

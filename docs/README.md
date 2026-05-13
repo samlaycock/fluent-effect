@@ -25,5 +25,7 @@ that differ from raw Effect defaults.
   when to use the native Effect escape hatch.
 - [Retry and Timeout](./retry-timeout.md) covers retry attempt counting,
   backoff options, native schedules, and timeout failure behavior.
+- [Logging and Tracing](./logging-tracing.md) covers structured log metadata,
+  span attributes, and native Effect instrumentation boundaries.
 - [Package Exports](./package-exports.md) covers the package entrypoints and
   import guarantees.
