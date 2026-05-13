@@ -24,10 +24,10 @@ const loadUser = (id: string) =>
 The optional second argument is a `Record<string, unknown>` and is forwarded as
 structured log data to Effect:
 
-```ts
-yield * fx.log("Cache hit", { key, ttlMs: 30_000 });
-yield * fx.logWarn("Slow user lookup", { userId, elapsedMs });
-yield * fx.logError("Payment provider failed", { provider, cause });
+```
+yield* fx.log("Cache hit", { key, ttlMs: 30_000 });
+yield* fx.logWarn("Slow user lookup", { userId, elapsedMs });
+yield* fx.logError("Payment provider failed", { provider, cause });
 ```
 
 Choose the helper by severity:
