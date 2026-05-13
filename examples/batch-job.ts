@@ -55,8 +55,8 @@ const loadUsers = (ids: readonly string[]) =>
     return users;
   });
 
-const testUserApi = fx.provideDependency(UserApi, {
+const stubUserApi = fx.provideDependency(UserApi, {
   fetchUser: async (id) => ({ id, name: `User ${id}` }),
 });
 
-export const main = fx.runWith(loadUsers(["1", "2", "3"]), fx.dependencies(testUserApi));
+export const main = fx.runWith(loadUsers(["1", "2", "3"]), fx.dependencies(stubUserApi));
