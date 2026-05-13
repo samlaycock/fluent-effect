@@ -64,8 +64,8 @@ import { fx } from "fluent-effect";
 | `fx.retryBackoff`                     | Retry with exponential backoff.                                    |
 | `fx.timeout`                          | Apply a timeout, optionally converting timeout to a typed failure. |
 | `fx.timeoutFail`                      | Apply a timeout that fails with an application error.              |
-| `fx.log`, `fx.logWarn`, `fx.logError` | Log through Effect.                                                |
-| `fx.trace`, `fx.span`                 | Add a tracing span.                                                |
+| `fx.log`, `fx.logWarn`, `fx.logError` | Log through Effect with optional structured metadata.              |
+| `fx.trace`, `fx.span`                 | Wrap a task in an Effect tracing span with optional span metadata. |
 
 ## Dependencies and Layers
 
