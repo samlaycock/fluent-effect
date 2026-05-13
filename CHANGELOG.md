@@ -1,5 +1,24 @@
 # fluent-effect
 
+## 0.2.0
+
+### Minor Changes
+
+- 15213a2: Add `fx.acquireUseRelease` and `fx.bracket` for resource-safe acquire/use/release workflows.
+
+### Patch Changes
+
+- 0f23744: Isolate package export smoke tests from the repository `dist` directory so concurrent typecheck runs cannot observe a partially rebuilt package output.
+- d742499: Document logging and tracing helpers, including structured log metadata and span attributes.
+- 9130dd6: Add interruption regression tests for collection helper cancellation semantics.
+- 4c44614: Declare the package as side-effect free so consumer bundlers can tree-shake unused modules more effectively.
+- 4de756d: Publish source maps with the built package.
+- 41b8cc6: Fix `fx.withDependency` so direct dependency values of `undefined` are provided with `Effect.provideService` instead of being mistaken for the layer overload.
+- e6376d7: Reuse `fx.app` dependency environments across repeated app runs and expose
+  `app.dispose()` for releasing scoped layer resources.
+- 09854aa: Add runnable Bun smoke coverage for every TypeScript example.
+- 2188ee7: Validate retry attempt counts before constructing retry schedules.
+
 ## 0.1.1
 
 ### Patch Changes
