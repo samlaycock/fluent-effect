@@ -473,6 +473,16 @@ const withLiveDependencyOverload = fx.withDependency(getUserFromDependencies, li
 const runWithLiveDependencies = fx.runWith(getUserFromDependencies, liveDependencies);
 const runWithOrThrowLiveDependencies = fx.runWithOrThrow(getUserFromDependencies, liveDependencies);
 const runWithResultLiveDependencies = fx.runWithResult(getUserFromDependencies, liveDependencies);
+const failingDependencies = fx.dependencies(
+  fx.layer(Users, fx.fail(new NetworkError("config"))),
+  fx.provideDependency(AuditLog, {
+    record: () => fx.ok(undefined),
+  }),
+);
+const runWithResultFailingDependencies = fx.runWithResult(
+  getUserFromDependencies,
+  failingDependencies,
+);
 const app = fx.app(liveDependencies);
 const appProvided = app.provide(getUserFromDependencies);
 const appRun = app.run(getUserFromDependencies);
@@ -500,6 +510,12 @@ type _run_with_result_result = Expect<
   Equal<
     Awaited<typeof runWithResultLiveDependencies>,
     import("../src/index").Result<User, NotFound>
+  >
+>;
+type _run_with_result_layer_error_result = Expect<
+  Equal<
+    Awaited<typeof runWithResultFailingDependencies>,
+    import("../src/index").Result<User, NotFound | NetworkError>
   >
 >;
 type _app_run_result = Expect<Equal<Awaited<typeof appRun>, User>>;
