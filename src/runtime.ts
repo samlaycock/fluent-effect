@@ -24,6 +24,8 @@ const fiberFailureToResult = <A, E>(cause: Cause.Cause<E>): Result<A, E> => {
   throw Cause.squash(cause);
 };
 
+const makeDisposedAppError = () => new Error("Cannot use fx.app after dispose() has been called");
+
 /** Run a fully-provided Task and get back a Promise. */
 export const run = Effect.runPromise;
 
@@ -138,13 +140,35 @@ export const runWithResult = async <A, E, ROut, E2>(
 
 /** Run a Task with a reusable dependency environment. */
 export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => {
-  const provide = <A, E, R>(self: Task<A, E, R>) => Effect.provide(self, dependencies);
+  let disposed = false;
+  let disposePromise: Promise<void> | undefined;
+  const assertActive = () => {
+    if (disposed) {
+      throw makeDisposedAppError();
+    }
+  };
+  const rejectIfDisposed = () => {
+    if (disposed) {
+      return Promise.reject(makeDisposedAppError());
+    }
+  };
+  const provide = <A, E, R>(self: Task<A, E, R>) => {
+    assertActive();
+    return Effect.provide(self, dependencies);
+  };
   const runtime = ManagedRuntime.make(dependencies as Layer.Layer<ROut, E2, never>);
+  const dispose = () => {
+    disposed = true;
+    disposePromise ??= runtime.dispose();
+    return disposePromise;
+  };
 
   return {
     provide,
-    run: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runPromise(self),
+    run: <A, E>(self: RunnableTask<RIn, ROut, A, E>) =>
+      rejectIfDisposed() ?? runtime.runPromise(self),
     runOrThrow: async <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
+      assertActive();
       try {
         const result = await runtime.runPromise(Effect.either(self));
 
@@ -162,6 +186,7 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       }
     },
     runResult: async <A, E>(self: RunnableTask<RIn, ROut, A, E>): Promise<Result<A, E | E2>> => {
+      assertActive();
       try {
         const result = await runtime.runPromise(Effect.either(self));
 
@@ -178,8 +203,12 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
         throw cause;
       }
     },
-    runSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSync(self),
+    runSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
+      assertActive();
+      return runtime.runSync(self);
+    },
     runOrThrowSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
+      assertActive();
       try {
         const result = runtime.runSync(Effect.either(self));
 
@@ -197,6 +226,7 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       }
     },
     runResultSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>): Result<A, E | E2> => {
+      assertActive();
       try {
         const result = runtime.runSync(Effect.either(self));
 
@@ -213,9 +243,13 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
         throw cause;
       }
     },
-    runExit: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runPromiseExit(self),
-    runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => runtime.runSyncExit(self),
-    dispose: () => runtime.dispose(),
-    [Symbol.asyncDispose]: () => runtime.dispose(),
+    runExit: <A, E>(self: RunnableTask<RIn, ROut, A, E>) =>
+      rejectIfDisposed() ?? runtime.runPromiseExit(self),
+    runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
+      assertActive();
+      return runtime.runSyncExit(self);
+    },
+    dispose,
+    [Symbol.asyncDispose]: dispose,
   } as const;
 };
