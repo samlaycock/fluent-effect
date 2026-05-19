@@ -42,6 +42,12 @@ When `times` is provided with backoff, the helper intersects the exponential
 schedule with `Schedule.recurs(times)`, so retrying stops when either schedule
 stops. When `times` is omitted, the backoff schedule is uncapped by this helper.
 
+`factor` only applies to exponential backoff schedules. Passing `factor` without
+`backoff` is rejected by the TypeScript API and throws a synchronous
+`RangeError` with the message
+`retry factor requires backoff because factor only applies to exponential backoff schedules`
+if such an options object reaches runtime.
+
 ## Native Schedules
 
 Pass a native `Schedule` when the options object is too small for the desired

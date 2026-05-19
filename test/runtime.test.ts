@@ -1036,25 +1036,14 @@ describe("fx runtime behavior", () => {
     expect(attempts).toBe(1);
   });
 
-  test("fx.retry treats factor-only options as zero retries", async () => {
-    let attempts = 0;
-    const error = new Error("again");
+  test("fx.retry rejects factor without backoff synchronously", () => {
+    const task = fx.succeed("ok");
+    const factorOnlyOptions = { factor: 2 } as never;
 
-    const result = await fx.runResult(
-      fx.retry(
-        fx.trySync({
-          try: () => {
-            attempts += 1;
-            throw error;
-          },
-          catch: (cause) => cause,
-        }),
-        { factor: 2 },
-      ),
+    expect(() => fx.retry(task, factorOnlyOptions)).toThrow(RangeError);
+    expect(() => fx.retry(task, factorOnlyOptions)).toThrow(
+      "retry factor requires backoff because factor only applies to exponential backoff schedules",
     );
-
-    expect(result).toEqual({ ok: false, error });
-    expect(attempts).toBe(1);
   });
 
   test("fx.run rejects typed failures", async () => {
