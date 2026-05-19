@@ -52,6 +52,7 @@ import { fx } from "fluent-effect";
 | `fx.each`                     | Traverse items sequentially by default.               |
 | `fx.eachParallel`             | Traverse items with unbounded concurrency.            |
 | `fx.eachLimit`                | Traverse items with bounded concurrency.              |
+| `fx.eachBatch`                | Traverse items in sequential batches.                 |
 | `fx.eachDiscard`              | Traverse items and discard success values.            |
 | `fx.eachDiscardParallel`      | Discard traversal with unbounded concurrency.         |
 | `fx.eachDiscardLimit`         | Discard traversal with bounded concurrency.           |

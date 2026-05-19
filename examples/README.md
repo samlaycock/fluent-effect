@@ -80,6 +80,7 @@ Shows sequential, parallel, and bounded collection processing:
 
 ```ts
 fx.each;
+fx.eachBatch;
 fx.sequence;
 ```
 
@@ -90,7 +91,7 @@ Use this when you want collection APIs that make execution strategy obvious.
 Shows a realistic workflow with concurrency and operational concerns:
 
 ```ts
-fx.sequence;
+fx.eachBatch;
 fx.retry;
 fx.timeout;
 fx.trace;

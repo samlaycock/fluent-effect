@@ -35,12 +35,23 @@ const boundedParallel = fx.task(function* () {
   });
 });
 
+const batched = fx.task(function* () {
+  const numbers = yield* fx.eachBatch(inputs, 2, (input) => parseNumber(input), {
+    concurrency: 2,
+  });
+
+  return yield* fx.sequence(numbers.map(double), {
+    concurrency: 2,
+  });
+});
+
 export const main = fx.run(
   fx.task(function* () {
     return {
       sequential: yield* sequential,
       unboundedParallel: yield* unboundedParallel,
       boundedParallel: yield* boundedParallel,
+      batched: yield* batched,
     };
   }),
 );

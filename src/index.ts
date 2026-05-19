@@ -67,6 +67,7 @@ export const fx = {
   eachParallel: concurrency.eachParallel,
   eachDiscardParallel: concurrency.eachDiscardParallel,
   eachLimit: concurrency.eachLimit,
+  eachBatch: concurrency.eachBatch,
   eachDiscardLimit: concurrency.eachDiscardLimit,
   all: concurrency.all,
   sequence: concurrency.sequence,

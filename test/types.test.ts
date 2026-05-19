@@ -263,6 +263,12 @@ const eachLimit = fx.each([1, 2, 3], (n) => fx.ok(n > 1), {
 
 type _each_limit_result = Expect<Equal<TaskResult<typeof eachLimit>, boolean[]>>;
 
+const eachBatch = fx.eachBatch([1, 2, 3], 2, (n) => fx.ok(n > 1), {
+  concurrency: 2,
+});
+
+type _each_batch_result = Expect<Equal<TaskResult<typeof eachBatch>, boolean[]>>;
+
 const eachDiscard = fx.eachDiscard([1, 2, 3], (n) => fx.ok(String(n)));
 
 type _each_discard_result = Expect<Equal<TaskResult<typeof eachDiscard>, void>>;

@@ -353,6 +353,69 @@ describe("fx runtime behavior", () => {
     }
   });
 
+  test("fx.eachBatch preserves result order across sequential batches", async () => {
+    const events: string[] = [];
+
+    const result = await fx.run(
+      fx.eachBatch([1, 2, 3, 4, 5], 2, (n, index) =>
+        fx.task(function* () {
+          events.push(`start:${n}`);
+          yield* Effect.sleep(n % 2 === 0 ? "1 millis" : "5 millis");
+          events.push(`end:${n}`);
+          return `${index}:${n * 2}`;
+        }),
+      ),
+    );
+
+    expect(result).toEqual(["0:2", "1:4", "2:6", "3:8", "4:10"]);
+    expect(events).toEqual([
+      "start:1",
+      "end:1",
+      "start:2",
+      "end:2",
+      "start:3",
+      "end:3",
+      "start:4",
+      "end:4",
+      "start:5",
+      "end:5",
+    ]);
+  });
+
+  test("fx.eachBatch bounds concurrency within each batch", async () => {
+    const state = { active: 0, maxActive: 0 };
+
+    const result = await fx.run(
+      fx.eachBatch(
+        [1, 2, 3, 4, 5],
+        3,
+        (n) =>
+          fx.task(function* () {
+            state.active += 1;
+            state.maxActive = Math.max(state.maxActive, state.active);
+            yield* Effect.sleep("10 millis");
+            state.active -= 1;
+            return n;
+          }),
+        { concurrency: 2 },
+      ),
+    );
+
+    expect(result).toEqual([1, 2, 3, 4, 5]);
+    expect(state.maxActive).toBe(2);
+  });
+
+  test("fx.eachBatch rejects invalid batch sizes", () => {
+    const invalidBatchSizes = [0, -1, Number.NaN, 1.5];
+
+    for (const batchSize of invalidBatchSizes) {
+      expect(() => fx.eachBatch([1], batchSize, (n) => fx.succeed(n))).toThrow(RangeError);
+      expect(() => fx.eachBatch([1], batchSize, (n) => fx.succeed(n))).toThrow(
+        "batch size must be a positive finite integer",
+      );
+    }
+  });
+
   test("fx.sequence preserves object shape", async () => {
     const result = await fx.run(
       fx.sequence({
