@@ -1,4 +1,4 @@
-import { Cause, Effect, Layer, ManagedRuntime, Runtime } from "effect";
+import { Cause, Effect, Exit, Layer, ManagedRuntime, Runtime } from "effect";
 
 import type { Result, Task } from "./types.js";
 
@@ -152,6 +152,7 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       return Promise.reject(makeDisposedAppError());
     }
   };
+  const disposedExit = () => Exit.die(makeDisposedAppError());
   const provide = <A, E, R>(self: Task<A, E, R>) => {
     assertActive();
     return Effect.provide(self, dependencies);
@@ -244,11 +245,9 @@ export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => 
       }
     },
     runExit: <A, E>(self: RunnableTask<RIn, ROut, A, E>) =>
-      rejectIfDisposed() ?? runtime.runPromiseExit(self),
-    runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) => {
-      assertActive();
-      return runtime.runSyncExit(self);
-    },
+      disposed ? Promise.resolve(disposedExit()) : runtime.runPromiseExit(self),
+    runExitSync: <A, E>(self: RunnableTask<RIn, ROut, A, E>) =>
+      disposed ? disposedExit() : runtime.runSyncExit(self),
     dispose,
     [Symbol.asyncDispose]: dispose,
   } as const;
