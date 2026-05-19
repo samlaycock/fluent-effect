@@ -78,6 +78,7 @@ export const fx = {
   retryBackoff: concurrency.retryBackoff,
   timeout: concurrency.timeout,
   timeoutFail: concurrency.timeoutFail,
+  timeoutOption: concurrency.timeoutOption,
 
   // Error handling
   recover: errors.recover,

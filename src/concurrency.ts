@@ -289,3 +289,7 @@ export const timeoutFail = <A, E, R, E1>(
   duration: Duration.DurationInput,
   onTimeout: () => E1,
 ): Task<A, E | E1, R> => timeout(self, duration, onTimeout);
+
+/** Helper: add a timeout that returns None when the timeout wins. */
+export const timeoutOption = <A, E, R>(self: Task<A, E, R>, duration: Duration.DurationInput) =>
+  Effect.timeoutOption(self, duration);

@@ -1,4 +1,4 @@
-import { Effect, Either, Layer, Scope } from "../src/effect";
+import { Effect, Either, Layer, Option, Scope } from "../src/effect";
 import {
   fx,
   type ErrorOf,
@@ -347,12 +347,27 @@ const timeoutFailedOverload = fx.timeout(
   "1 second",
   () => new TimedOut(),
 );
+const timeoutOptioned = fx.timeoutOption(fx.ok(user) as Task<User, NetworkError>, "1 second");
+const timeoutOptionedWithDependency = fx.timeoutOption(getUser, "1 second");
 
 type _timeout_fail_result = Expect<Equal<TaskResult<typeof timeoutFailed>, User>>;
 type _timeout_fail_error = Expect<Equal<TaskError<typeof timeoutFailed>, NetworkError | TimedOut>>;
 type _timeout_fail_overload_result = Expect<Equal<TaskResult<typeof timeoutFailedOverload>, User>>;
 type _timeout_fail_overload_error = Expect<
   Equal<TaskError<typeof timeoutFailedOverload>, NetworkError | TimedOut>
+>;
+type _timeout_option_result = Expect<
+  Equal<TaskResult<typeof timeoutOptioned>, Option.Option<User>>
+>;
+type _timeout_option_error = Expect<Equal<TaskError<typeof timeoutOptioned>, NetworkError>>;
+type _timeout_option_dependency_result = Expect<
+  Equal<TaskResult<typeof timeoutOptionedWithDependency>, Option.Option<User>>
+>;
+type _timeout_option_dependency_error = Expect<
+  Equal<TaskError<typeof timeoutOptionedWithDependency>, NotFound>
+>;
+type _timeout_option_dependency_deps = Expect<
+  Equal<TaskDeps<typeof timeoutOptionedWithDependency>, UserRepo>
 >;
 
 const spanned = fx.span(fx.ok(user), "load-user", { attributes: { userId: user.id } });
