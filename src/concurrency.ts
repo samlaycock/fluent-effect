@@ -50,6 +50,16 @@ const validateRetryTimes = (times: number) => {
   return times;
 };
 
+const validateRetryOptions = (options: RetryOptions) => {
+  if (options.backoff === undefined && options.factor !== undefined) {
+    throw new RangeError(
+      "retry factor requires backoff because factor only applies to exponential backoff schedules",
+    );
+  }
+
+  return options;
+};
+
 /** Map over a collection. Sequential by default; pass concurrency for parallel work. */
 export function each<I, A, E, R>(
   items: Iterable<I>,
@@ -189,11 +199,17 @@ export function parallelLimit(
 /** Alias: conditionally run one of two tasks. */
 export const when = Effect.if;
 
-type RetryOptions = {
-  readonly times?: number | undefined;
-  readonly backoff?: Duration.DurationInput | undefined;
-  readonly factor?: number | undefined;
-};
+type RetryOptions =
+  | {
+      readonly times?: number | undefined;
+      readonly backoff?: undefined;
+      readonly factor?: undefined;
+    }
+  | {
+      readonly times?: number | undefined;
+      readonly backoff: Duration.DurationInput;
+      readonly factor?: number | undefined;
+    };
 
 /** Retry a task with a schedule/policy or simple house options. */
 export function retry<A, E, R, B, R1>(
@@ -209,15 +225,17 @@ export function retry<A, E, R, B, R1>(
     return Effect.retry(self, policyOrOptions);
   }
 
-  if (policyOrOptions.backoff !== undefined) {
+  const options = validateRetryOptions(policyOrOptions);
+
+  if (options.backoff !== undefined) {
     return retryBackoff(self, {
-      base: policyOrOptions.backoff,
-      factor: policyOrOptions.factor,
-      times: policyOrOptions.times,
+      base: options.backoff,
+      factor: options.factor,
+      times: options.times,
     });
   }
 
-  return retryTimes(self, policyOrOptions.times ?? 0);
+  return retryTimes(self, options.times ?? 0);
 }
 
 /** Helper: retry a task a fixed number of times. */

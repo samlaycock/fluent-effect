@@ -252,10 +252,10 @@ const retriedWithEmptyOptions = fx.retry(
   fx.fail(new NetworkError("nope")) as Task<User, NetworkError>,
   {},
 );
-const retriedWithFactorOnly = fx.retry(
-  fx.fail(new NetworkError("nope")) as Task<User, NetworkError>,
-  { factor: 2 },
-);
+const _assertRetryFactorRequiresBackoff = (task: Task<User, NetworkError>) => {
+  // @ts-expect-error factor requires backoff so it cannot be silently ignored.
+  fx.retry(task, { factor: 2 });
+};
 
 type _retry_backoff_result = Expect<Equal<TaskResult<typeof retriedBackoff>, User>>;
 type _retry_backoff_error = Expect<Equal<TaskError<typeof retriedBackoff>, NetworkError>>;
@@ -269,11 +269,6 @@ type _retry_with_empty_options_result = Expect<
 type _retry_with_empty_options_error = Expect<
   Equal<TaskError<typeof retriedWithEmptyOptions>, NetworkError>
 >;
-type _retry_with_factor_only_result = Expect<Equal<TaskResult<typeof retriedWithFactorOnly>, User>>;
-type _retry_with_factor_only_error = Expect<
-  Equal<TaskError<typeof retriedWithFactorOnly>, NetworkError>
->;
-
 class TimedOut {
   readonly _tag = "TimedOut";
 }
