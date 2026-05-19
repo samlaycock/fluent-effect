@@ -121,6 +121,8 @@ export const fx = {
   runOrThrow: runtime.runOrThrow,
   runResult: runtime.runResult,
   runWith: runtime.runWith,
+  runWithOrThrow: runtime.runWithOrThrow,
+  runWithResult: runtime.runWithResult,
   app: runtime.app,
   runSync: runtime.runSync,
   runOrThrowSync: runtime.runOrThrowSync,

@@ -92,6 +92,50 @@ export const runWith = <A, E, ROut, E2>(
   dependencies: Layer.Layer<ROut, E2, never>,
 ): Promise<A> => Effect.runPromise(Effect.provide(self, dependencies));
 
+/** Run a Task with a dependency environment and throw original typed failure values. */
+export const runWithOrThrow = async <A, E, ROut, E2>(
+  self: Task<A, E, ROut>,
+  dependencies: Layer.Layer<ROut, E2, never>,
+): Promise<A> => {
+  try {
+    const result = await Effect.runPromise(Effect.either(Effect.provide(self, dependencies)));
+
+    if (result._tag === "Left") {
+      throw result.left;
+    }
+
+    return result.right;
+  } catch (cause) {
+    if (Runtime.isFiberFailure(cause)) {
+      throwFiberFailure(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+    }
+
+    throw cause;
+  }
+};
+
+/** Run a Task with a dependency environment and return a plain JavaScript Result value. */
+export const runWithResult = async <A, E, ROut, E2>(
+  self: Task<A, E, ROut>,
+  dependencies: Layer.Layer<ROut, E2, never>,
+): Promise<Result<A, E | E2>> => {
+  try {
+    const result = await Effect.runPromise(Effect.either(Effect.provide(self, dependencies)));
+
+    if (result._tag === "Left") {
+      return { ok: false, error: result.left };
+    }
+
+    return { ok: true, value: result.right };
+  } catch (cause) {
+    if (Runtime.isFiberFailure(cause)) {
+      return fiberFailureToResult(cause[Runtime.FiberFailureCauseId] as Cause.Cause<E | E2>);
+    }
+
+    throw cause;
+  }
+};
+
 /** Run a Task with a reusable dependency environment. */
 export const app = <ROut, E2, RIn>(dependencies: Layer.Layer<ROut, E2, RIn>) => {
   const provide = <A, E, R>(self: Task<A, E, R>) => Effect.provide(self, dependencies);

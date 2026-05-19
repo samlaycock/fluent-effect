@@ -5,14 +5,16 @@ executed and how failures are represented outside Effect.
 
 ## Choosing a Runner
 
-| Helper                           | Use when                                        | Failure behavior                                           |
-| -------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| `fx.run(task)`                   | You want a `Promise` for a fully provided task. | The returned promise rejects using native Effect behavior. |
-| `fx.runOrThrow(task)`            | Boundary code expects thrown typed failures.    | Throws the original typed failure value.                   |
-| `fx.runResult(task)`             | Boundary code wants a plain result object.      | Resolves to `{ ok: false, error }`.                        |
-| `fx.runExit(task)`               | You need native `Exit` details.                 | Resolves to an Effect `Exit`.                              |
-| `fx.runWith(task, dependencies)` | You have one dependency layer and one task.     | Provides the layer, then behaves like `fx.run`.            |
-| `fx.app(dependencies)`           | Many tasks share the same dependency layer.     | Provides the layer through reusable methods.               |
+| Helper                                  | Use when                                                         | Failure behavior                                           |
+| --------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
+| `fx.run(task)`                          | You want a `Promise` for a fully provided task.                  | The returned promise rejects using native Effect behavior. |
+| `fx.runOrThrow(task)`                   | Boundary code expects thrown typed failures.                     | Throws the original typed failure value.                   |
+| `fx.runResult(task)`                    | Boundary code wants a plain result object.                       | Resolves to `{ ok: false, error }`.                        |
+| `fx.runExit(task)`                      | You need native `Exit` details.                                  | Resolves to an Effect `Exit`.                              |
+| `fx.runWith(task, dependencies)`        | You have one dependency layer and one task.                      | Provides the layer, then behaves like `fx.run`.            |
+| `fx.runWithOrThrow(task, dependencies)` | One-shot dependency boundary code expects thrown typed failures. | Throws task or layer typed failures directly.              |
+| `fx.runWithResult(task, dependencies)`  | One-shot dependency boundary code wants a plain result object.   | Resolves task or layer failures to `{ ok: false, error }`. |
+| `fx.app(dependencies)`                  | Many tasks share the same dependency layer.                      | Provides the layer through reusable methods.               |
 
 ## Plain Result Objects
 
@@ -41,6 +43,14 @@ try {
 } catch (error) {
   console.error(error);
 }
+```
+
+For one-shot dependency-backed tasks, use `runWithOrThrow` or `runWithResult`
+when layer acquisition failures should use the same typed JavaScript boundary
+semantics as task failures.
+
+```ts
+const result = await fx.runWithResult(loadUser("1"), dependencies);
 ```
 
 ## Reusable Applications

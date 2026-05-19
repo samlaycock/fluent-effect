@@ -76,7 +76,12 @@ provides a full layer.
 ## Runtime Wiring
 
 `fx.runWith(task, dependencies)` provides a layer once and runs the task as a
-promise.
+promise with native Effect rejection behavior.
+
+Use `fx.runWithOrThrow(task, dependencies)` when boundary code should catch the
+original typed task failure or dependency layer failure as a thrown value. Use
+`fx.runWithResult(task, dependencies)` when boundary code should receive those
+failures as a plain `{ ok: false, error }` result.
 
 `fx.app(dependencies)` creates a reusable boundary with `provide`, async run
 helpers, sync run helpers, result helpers, and exit helpers. Its run helpers
