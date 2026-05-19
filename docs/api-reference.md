@@ -103,20 +103,20 @@ import { fx } from "fluent-effect";
 
 ## Public Types
 
-| Type                               | Purpose                                         |
-| ---------------------------------- | ----------------------------------------------- |
-| `Task<A, E, R>`                    | Alias for `Effect.Effect<A, E, R>`.             |
-| `AnyTask`                          | Unknown task type for constraints.              |
-| `TaskResult<T>`                    | Infer a task success type.                      |
-| `TaskError<T>`                     | Infer a task failure type.                      |
-| `TaskDeps<T>`                      | Infer a task dependency environment.            |
-| `Result<A, E>`                     | Plain result object returned by result runners. |
-| `FxError<Name, Fields>`            | Tagged error object type.                       |
-| `ErrorFactory<Name>`               | Type of `fx.error(name)`.                       |
-| `ErrorConstructor<Name, Fields>`   | Type of an error constructor.                   |
-| `ErrorConstructors<Spec>`          | Type of an error constructor family.            |
-| `ErrorOf<T>`, `ErrorInstance<T>`   | Infer one constructor's error value.            |
-| `ErrorsOf<T>`, `ErrorInstances<T>` | Infer the union of a constructor family.        |
+| Type                               | Purpose                                            |
+| ---------------------------------- | -------------------------------------------------- |
+| `Task<A, E, R>`                    | Alias for `Effect.Effect<A, E, R>`.                |
+| `AnyTask`                          | Unknown task type for constraints.                 |
+| `TaskResult<T>`                    | Infer a task success type.                         |
+| `TaskError<T>`                     | Infer a task failure type.                         |
+| `TaskDeps<T>`                      | Infer a task dependency environment.               |
+| `Result<A, E>`                     | Plain result object returned by result runners.    |
+| `FxError<Name, Fields>`            | Tagged error object type.                          |
+| `ErrorFactory<Name>`               | Type of `fx.error(name)`.                          |
+| `ErrorConstructor<Name, Fields>`   | Error constructor type; empty fields are optional. |
+| `ErrorConstructors<Spec>`          | Type of an error constructor family.               |
+| `ErrorOf<T>`, `ErrorInstance<T>`   | Infer one constructor's error value.               |
+| `ErrorsOf<T>`, `ErrorInstances<T>` | Infer the union of a constructor family.           |
 
 The root also exports `Cause`, `Exit`, and `pipe` from Effect. Import broader
 native Effect modules from `fluent-effect/effect`.

@@ -26,7 +26,7 @@ export type FxError<Name extends string, Fields extends object = {}> = Readonly<
 };
 
 export type ErrorFactory<Name extends string> = {
-  <Fields extends object = {}>(): (fields: Fields) => FxError<Name, Fields>;
+  <Fields extends object = {}>(): ErrorConstructor<Name, Fields>;
   readonly type: Name;
 };
 

@@ -15,6 +15,15 @@ const error = NotFound({ id: "1" });
 // { id: "1", _tag: "NotFound" }
 ```
 
+Empty field shapes can be called without an argument.
+
+```ts
+const TimedOut = fx.error("TimedOut")<{}>();
+
+TimedOut();
+// { _tag: "TimedOut" }
+```
+
 The constructor also exposes `type` with the tag name.
 
 ## Error Families

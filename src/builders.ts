@@ -24,7 +24,12 @@ export const fail = Effect.fail;
 export const error = <const Name extends string>(name: Name): ErrorFactory<Name> =>
   Object.assign(
     <Fields extends object = {}>() =>
-      (fields: Fields): FxError<Name, Fields> => ({ ...fields, _tag: name }),
+      Object.assign(
+        (fields: Fields = {} as Fields): FxError<Name, Fields> => ({ ...fields, _tag: name }),
+        {
+          type: name,
+        },
+      ),
     { type: name },
   );
 
