@@ -18,6 +18,8 @@ import { fx } from "fluent-effect";
 | `fx.trySync`             | Convert synchronous throwing code into a synchronously runnable task. |
 | `fx.acquireUseRelease`   | Acquire, use, and release a resource safely.                          |
 | `fx.bracket`             | Alias for `fx.acquireUseRelease`.                                     |
+| `fx.acquireRelease`      | Acquire a scoped resource and register its finalizer.                 |
+| `fx.scoped`              | Run a scoped task and close the scope when it completes.              |
 
 ## Errors
 
@@ -78,6 +80,7 @@ import { fx } from "fluent-effect";
 | `fx.provideDependencyTask`, `fx.dependencyTask` | Build and provide a dependency from a task.       |
 | `fx.layer`                                      | Native `Layer.effect`.                            |
 | `fx.layerSync`                                  | Native `Layer.succeed`.                           |
+| `fx.layerScoped`                                | Native `Layer.scoped` for scoped dependencies.    |
 | `fx.dependencies`, `fx.mergeAllLayers`          | Merge many layers.                                |
 | `fx.mergeLayers`                                | Merge two layers.                                 |
 | `fx.withDependency`, `fx.withDependencies`      | Provide one value or one layer to a task.         |

@@ -746,6 +746,141 @@ describe("fx runtime behavior", () => {
     expect(result).toBe("released");
   });
 
+  test("fx.acquireRelease with fx.scoped releases resources after success", async () => {
+    const events: string[] = [];
+
+    const result = await fx.run(
+      fx.scoped(
+        fx
+          .acquireRelease(
+            fx.sync(() => {
+              events.push("acquire");
+              return "resource";
+            }),
+            (resource, exit) =>
+              fx.sync(() => {
+                events.push(`release:${resource}:${exit._tag}`);
+              }),
+          )
+          .pipe(
+            fx.chain((resource) =>
+              fx.sync(() => {
+                events.push(`use:${resource}`);
+                return "done";
+              }),
+            ),
+          ),
+      ),
+    );
+
+    expect(result).toBe("done");
+    expect(events).toEqual(["acquire", "use:resource", "release:resource:Success"]);
+  });
+
+  test("fx.acquireRelease with fx.scoped releases resources after failure", async () => {
+    const AppError = fx.errors<{ Boom: { message: string } }>();
+    const events: string[] = [];
+
+    const result = await fx.runExit(
+      fx.scoped(
+        fx
+          .acquireRelease(
+            fx.sync(() => {
+              events.push("acquire");
+              return "resource";
+            }),
+            (resource, exit) =>
+              fx.sync(() => {
+                events.push(`release:${resource}:${exit._tag}`);
+              }),
+          )
+          .pipe(
+            fx.chain((resource) =>
+              fx.task(function* () {
+                events.push(`use:${resource}`);
+                return yield* fx.fail(AppError.Boom({ message: "bad" }));
+              }),
+            ),
+          ),
+      ),
+    );
+
+    expect(result._tag).toBe("Failure");
+    expect(events).toEqual(["acquire", "use:resource", "release:resource:Failure"]);
+  });
+
+  test("fx.acquireRelease with fx.scoped releases resources after interruption", async () => {
+    const result = await fx.run(
+      Effect.gen(function* () {
+        const released = yield* Deferred.make<void>();
+
+        const fiber = yield* Effect.fork(
+          fx.scoped(
+            fx
+              .acquireRelease(fx.succeed("resource"), (resource, exit) =>
+                fx
+                  .sync(() => {
+                    expect(resource).toBe("resource");
+                    expect(exit._tag).toBe("Failure");
+                  })
+                  .pipe(Effect.zipRight(Deferred.succeed(released, undefined))),
+              )
+              .pipe(fx.chain(() => Effect.never)),
+          ),
+        );
+
+        yield* Effect.timeoutFail(
+          Fiber.interrupt(fiber).pipe(Effect.zipRight(Deferred.await(released))),
+          {
+            duration: "1 second",
+            onTimeout: () =>
+              new Error("Timed out waiting for interrupted scoped resource to release"),
+          },
+        );
+
+        return "released";
+      }),
+    );
+
+    expect(result).toBe("released");
+  });
+
+  test("fx.layerScoped releases resources when an app is disposed", async () => {
+    interface Resource {
+      readonly value: string;
+    }
+
+    const Resource = fx.dependency<Resource>("Resource");
+    const events: string[] = [];
+    const layer = fx.layerScoped(
+      Resource,
+      fx.acquireRelease(
+        fx.sync(() => {
+          events.push("acquire");
+          return { value: "ready" };
+        }),
+        (resource, exit) =>
+          fx.sync(() => {
+            events.push(`release:${resource.value}:${exit._tag}`);
+          }),
+      ),
+    );
+
+    const app = fx.app(layer);
+    const value = await app.run(
+      fx.task(function* () {
+        const resource = yield* fx.getDependency(Resource);
+        events.push(`use:${resource.value}`);
+        return resource.value;
+      }),
+    );
+
+    await app.dispose();
+
+    expect(value).toBe("ready");
+    expect(events).toEqual(["acquire", "use:ready", "release:ready:Success"]);
+  });
+
   test("fx.onSuccess and fx.onFailure run hooks without changing the original result", async () => {
     const AppError = fx.errors<{ Boom: { message: string } }>();
     const events: string[] = [];
