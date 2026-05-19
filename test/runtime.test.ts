@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { Deferred, Effect, Fiber, Layer, Ref } from "../src/effect";
+import { Deferred, Effect, Fiber, Layer, Option, Ref } from "../src/effect";
 import { fx, type ErrorsOf, type Task } from "../src/index";
 
 const makeInterruptibleTask = (
@@ -1420,6 +1420,18 @@ describe("fx runtime behavior", () => {
     const result = await fx.run(fx.timeout(fx.succeed("fast"), "1 second"));
 
     expect(result).toBe("fast");
+  });
+
+  test("fx.timeoutOption returns None for slow tasks", async () => {
+    const result = await fx.run(fx.timeoutOption(Effect.sleep("20 millis"), "1 millis"));
+
+    expect(Option.isNone(result)).toBe(true);
+  });
+
+  test("fx.timeoutOption returns Some value for fast tasks", async () => {
+    const result = await fx.run(fx.timeoutOption(fx.succeed("fast"), "1 second"));
+
+    expect(result).toEqual(Option.some("fast"));
   });
 
   test("fx.retry with backoff options retries until success", async () => {

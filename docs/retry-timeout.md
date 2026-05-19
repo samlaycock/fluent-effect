@@ -80,3 +80,18 @@ fx.timeoutFail(task, "5 seconds", () => AppError.Timeout({ operation }));
 
 Prefer the typed failure form when a timeout should be handled like other
 application errors.
+
+Use `fx.timeoutOption(task, duration)` when crossing a boundary where timeout is
+an expected value-level outcome. It delegates to `Effect.timeoutOption`, returns
+`Option.some(value)` when the task completes in time, and returns `Option.none()`
+when the timeout wins. The original task errors and dependency requirements are
+preserved.
+
+```ts
+const maybeUser = fx.timeoutOption(loadUser, "500 millis");
+```
+
+Prefer `fx.timeoutOption` for optional/result-style boundary workflows, prefer
+`fx.timeoutFail` when callers should handle timeout as a typed application
+error, and keep `fx.timeout` when you explicitly want native Effect timeout
+semantics.
