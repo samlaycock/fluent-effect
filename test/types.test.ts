@@ -1,4 +1,4 @@
-import { Effect, Either, Layer } from "../src/effect";
+import { Effect, Either, Layer, Scope } from "../src/effect";
 import {
   fx,
   type ErrorOf,
@@ -90,7 +90,12 @@ interface ReleaseAudit {
   readonly record: (message: string) => Task<void>;
 }
 
+interface ResourceScope {
+  readonly id: string;
+}
+
 const ReleaseAudit = fx.dependency<ReleaseAudit>("ReleaseAudit");
+const ResourceScope = fx.dependency<ResourceScope>("ResourceScope");
 
 const resourceManaged = fx.acquireUseRelease(
   fx.trySync({
@@ -111,6 +116,43 @@ const bracketManaged = fx.bracket(
   () => fx.ok(undefined),
 );
 
+const scopedResource = fx.acquireRelease(
+  fx.task(function* () {
+    yield* fx.getDependency(ResourceScope);
+    return { id: "resource" };
+  }),
+  (resource) =>
+    fx.task(function* () {
+      const audit = yield* fx.getDependency(ReleaseAudit);
+      yield* audit.record(resource.id);
+    }),
+);
+
+const scopedResourceProgram = fx.scoped(
+  scopedResource.pipe(
+    fx.chain((resource) =>
+      resource.id === user.id ? fx.ok(resource.id) : fx.fail(new NotFound(resource.id)),
+    ),
+  ),
+);
+
+const scopedResourceLayer = fx.layerScoped(
+  Users,
+  fx.acquireRelease(
+    fx.task(function* () {
+      yield* fx.getDependency(ResourceScope);
+      return {
+        findById: (id: string) => fx.ok({ id, name: "Ada" }),
+      };
+    }),
+    () =>
+      fx.task(function* () {
+        const audit = yield* fx.getDependency(ReleaseAudit);
+        yield* audit.record("released");
+      }),
+  ),
+);
+
 type _acquire_use_release_result = Expect<Equal<TaskResult<typeof resourceManaged>, User>>;
 type _acquire_use_release_error = Expect<
   Equal<TaskError<typeof resourceManaged>, NetworkError | NotFound>
@@ -118,6 +160,19 @@ type _acquire_use_release_error = Expect<
 type _acquire_use_release_deps = Expect<Equal<TaskDeps<typeof resourceManaged>, ReleaseAudit>>;
 type _bracket_result = Expect<Equal<TaskResult<typeof bracketManaged>, string>>;
 type _bracket_error = Expect<Equal<TaskError<typeof bracketManaged>, never>>;
+type _acquire_release_result = Expect<Equal<TaskResult<typeof scopedResource>, { id: string }>>;
+type _acquire_release_error = Expect<Equal<TaskError<typeof scopedResource>, never>>;
+type _acquire_release_deps = Expect<
+  Equal<TaskDeps<typeof scopedResource>, ResourceScope | ReleaseAudit | Scope.Scope>
+>;
+type _scoped_result = Expect<Equal<TaskResult<typeof scopedResourceProgram>, string>>;
+type _scoped_error = Expect<Equal<TaskError<typeof scopedResourceProgram>, NotFound>>;
+type _scoped_deps = Expect<
+  Equal<TaskDeps<typeof scopedResourceProgram>, ResourceScope | ReleaseAudit>
+>;
+type _layer_scoped_deps = Expect<
+  Equal<typeof scopedResourceLayer, Layer.Layer<UserRepo, never, ResourceScope | ReleaseAudit>>
+>;
 
 const succeeded = fx.succeed(user);
 const fromSync = fx.fromSync(() => user);

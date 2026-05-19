@@ -63,6 +63,9 @@ export const layer = <I, S, E, R>(
 export const layerSync = <I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I> =>
   Layer.succeed(tag, impl);
 
+/** Build a Layer whose service implementation is acquired as a scoped resource. */
+export const layerScoped = Layer.scoped;
+
 /** Provide a dependency implementation from a plain value. */
 export function provideDependency<I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I>;
 export function provideDependency<I, S>(tag: Context.Tag<I, S>, impl: S): Layer.Layer<I> {

@@ -51,6 +51,8 @@ export const fx = {
   trySync: builders.trySync,
   acquireUseRelease: builders.acquireUseRelease,
   bracket: builders.bracket,
+  acquireRelease: builders.acquireRelease,
+  scoped: builders.scoped,
 
   // Combinators
   map: concurrency.map,
@@ -97,6 +99,7 @@ export const fx = {
   getDependencies: dependencies.getDependencies,
   layer: dependencies.layer,
   layerSync: dependencies.layerSync,
+  layerScoped: dependencies.layerScoped,
   provideDependency: dependencies.provideDependency,
   provideDependencyTask: dependencies.provideDependencyTask,
   dependencyValue: dependencies.dependencyValue,

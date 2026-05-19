@@ -110,3 +110,9 @@ export const acquireUseRelease = Effect.acquireUseRelease;
 
 /** Alias for acquire-use-release resource safety. */
 export const bracket = acquireUseRelease;
+
+/** Acquire a scoped resource and register its finalizer with the current scope. */
+export const acquireRelease = Effect.acquireRelease;
+
+/** Run a scoped task and release its finalizers when the scope closes. */
+export const scoped = Effect.scoped;
