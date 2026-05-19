@@ -39,8 +39,34 @@ const validateBoundedConcurrency = (concurrency: number) => {
   return concurrency;
 };
 
+const validateBatchSize = (batchSize: number) => {
+  if (!Number.isFinite(batchSize) || !Number.isInteger(batchSize) || batchSize < 1) {
+    throw new RangeError("batch size must be a positive finite integer");
+  }
+
+  return batchSize;
+};
+
 const normalizeConcurrency = (concurrency: Concurrency | undefined) =>
   concurrency === true ? "unbounded" : validateBoundedConcurrency(concurrency ?? 1);
+
+function* batchIterable<I>(items: Iterable<I>, batchSize: number) {
+  const batch: { readonly item: I; readonly index: number }[] = [];
+  let index = 0;
+
+  for (const item of items) {
+    batch.push({ item, index });
+    index += 1;
+
+    if (batch.length === batchSize) {
+      yield batch.splice(0, batch.length);
+    }
+  }
+
+  if (batch.length > 0) {
+    yield batch;
+  }
+}
 
 const validateRetryTimes = (times: number) => {
   if (!Number.isFinite(times) || !Number.isInteger(times) || times < 0) {
@@ -117,6 +143,39 @@ export const eachLimit = <I, A, E, R>(
   concurrency: number,
   f: (item: I, index: number) => Task<A, E, R>,
 ) => each(items, f, { concurrency: validateBoundedConcurrency(concurrency) });
+
+/** Helper: map over a collection in sequential batches. */
+export function eachBatch<I, A, E, R>(
+  items: Iterable<I>,
+  batchSize: number,
+  f: (item: I, index: number) => Task<A, E, R>,
+): Task<A[], E, R>;
+export function eachBatch<I, A, E, R, C extends Concurrency>(
+  items: Iterable<I>,
+  batchSize: number,
+  f: (item: I, index: number) => Task<A, E, R>,
+  options: ExecutionOptions<C>,
+): Task<A[], E, R>;
+export function eachBatch<I, A, E, R, C extends Concurrency>(
+  items: Iterable<I>,
+  batchSize: number,
+  f: (item: I, index: number) => Task<A, E, R>,
+  options?: ExecutionOptions<C>,
+) {
+  const batches = batchIterable(items, validateBatchSize(batchSize));
+
+  return Effect.map(
+    Effect.forEach(
+      batches,
+      (batch) =>
+        Effect.forEach(batch, ({ item, index }) => f(item, index), {
+          concurrency: normalizeConcurrency(options?.concurrency),
+        }),
+      { concurrency: 1 },
+    ),
+    (results) => results.flat(),
+  );
+}
 
 /** Helper: map over a collection with bounded concurrency and discard results. */
 export const eachDiscardLimit = <I, A, E, R>(

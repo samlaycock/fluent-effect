@@ -51,6 +51,20 @@ Bounded concurrency is validated before the Effect helper runs. Non-integer,
 non-finite, zero, or negative limits throw a `RangeError` synchronously with the
 message `bounded concurrency must be a positive finite integer`.
 
+## Batch Traversal
+
+Use `fx.eachBatch` for large collections that should be processed in chunks.
+Batches run sequentially, while items inside each batch use the same concurrency
+option as `fx.each`. Results keep the original input order.
+
+```ts
+const users = yield * fx.eachBatch(userIds, 100, (id) => loadUser(id), { concurrency: 10 });
+```
+
+Batch size is validated before any task runs. Non-integer, non-finite, zero, or
+negative sizes throw a `RangeError` synchronously with the message
+`batch size must be a positive finite integer`.
+
 ## Discard Traversal
 
 Use `fx.eachDiscard` when each item must run for its effect but the result array

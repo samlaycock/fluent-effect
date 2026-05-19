@@ -45,10 +45,7 @@ const loadUsers = (ids: readonly string[]) =>
   fx.task(function* () {
     yield* fx.log("Starting user import", { count: ids.length });
 
-    const users = yield* fx.sequence(
-      ids.map((id) => loadUser(id)),
-      { concurrency: 5 },
-    );
+    const users = yield* fx.eachBatch(ids, 100, (id) => loadUser(id), { concurrency: 5 });
 
     yield* fx.log("Finished user import", { count: users.length });
 
