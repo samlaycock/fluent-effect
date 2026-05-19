@@ -43,13 +43,14 @@ export const getDependencies = <const Deps extends DependencyMap>(
   deps: Deps,
 ): Task<DependencyMapValues<Deps>, never, DependencyMapContext<Deps>> =>
   Effect.contextWith((context: Context.Context<DependencyMapContext<Deps>>) => {
-    const entries = Reflect.ownKeys(deps).map((key) => {
+    const dependencies = {} as DependencyMapValues<Deps>;
+
+    for (const key of Reflect.ownKeys(deps)) {
       const tag = deps[key as keyof Deps] as Context.Tag<any, any>;
+      (dependencies as Record<PropertyKey, unknown>)[key] = Context.get(context, tag);
+    }
 
-      return [key, Context.get(context, tag)];
-    });
-
-    return Object.fromEntries(entries) as DependencyMapValues<Deps>;
+    return dependencies;
   });
 
 /** Build a Layer whose service implementation is created by a Task. */
