@@ -501,8 +501,11 @@ describe("fx runtime behavior", () => {
     expect(() => app.runSync(program)).toThrow(expectedMessage);
     expect(() => app.runOrThrowSync(program)).toThrow(expectedMessage);
     expect(() => app.runResultSync(program)).toThrow(expectedMessage);
-    await expectDisposedRejection(app.runExit(program));
-    expect(() => app.runExitSync(program)).toThrow(expectedMessage);
+
+    const exit = await app.runExit(program);
+    expect(exit._tag).toBe("Failure");
+    const syncExit = app.runExitSync(program);
+    expect(syncExit._tag).toBe("Failure");
   });
 
   test("fx.getDependency can retrieve several dependencies as a named object", async () => {

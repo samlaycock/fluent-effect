@@ -83,8 +83,11 @@ Disposal is idempotent: calling `app.dispose()` more than once returns the same
 shutdown work and releases scoped resources once. Once disposal starts, the app
 is permanently closed. Later calls to `app.provide`, `app.run`,
 `app.runOrThrow`, `app.runResult`, `app.runSync`, `app.runOrThrowSync`,
-`app.runResultSync`, `app.runExit`, or `app.runExitSync` fail with
+or `app.runResultSync` fail with
 `Error("Cannot use fx.app after dispose() has been called")`.
+`app.runExit` and `app.runExitSync` preserve their native `Exit` boundary
+contract by returning a failed `Exit` that dies with that same error instead of
+throwing or rejecting.
 
 ## Synchronous Runners
 
