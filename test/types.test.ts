@@ -30,6 +30,7 @@ class NetworkError {
 }
 
 const ValidationError = fx.error("ValidationError")<{ field: string }>();
+const EmptyError = fx.error("Empty")<{}>();
 
 type ValidationError = ReturnType<typeof ValidationError>;
 
@@ -125,9 +126,13 @@ type _succeed_result = Expect<Equal<TaskResult<typeof succeeded>, User>>;
 type _from_sync_result = Expect<Equal<TaskResult<typeof fromSync>, User>>;
 
 const validationError = ValidationError({ field: "email" });
+const emptyError = EmptyError();
 const timedOut = AppError.TimedOut();
 const appNotFound = AppError.NotFound({ id: "1" });
 const invalidInput = AppError.InvalidInput({ field: "email" });
+
+// @ts-expect-error Non-empty single error fields remain required.
+ValidationError();
 
 // @ts-expect-error Non-empty error fields remain required.
 AppError.NotFound();
@@ -137,6 +142,10 @@ type _error_factory_value = Expect<
     typeof validationError,
     import("../src/index").FxError<"ValidationError", { field: string }>
   >
+>;
+
+type _error_factory_empty_value = Expect<
+  Equal<typeof emptyError, import("../src/index").FxError<"Empty">>
 >;
 
 type _errors_timed_out_value = Expect<

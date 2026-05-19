@@ -852,12 +852,18 @@ describe("fx runtime behavior", () => {
   test("fx.error and fx.errors create tagged error values", () => {
     const ValidationErrorFactory = fx.error("ValidationError");
     const ValidationError = ValidationErrorFactory<{ field: string }>();
+    const EmptyError = fx.error("Empty")<{}>();
     const AppError = fx.errors<{ TimedOut: {}; NotFound: { id: string } }>();
 
     expect(ValidationErrorFactory.type).toBe("ValidationError");
+    expect(ValidationError.type).toBe("ValidationError");
     expect(ValidationError({ field: "email" })).toEqual({
       _tag: "ValidationError",
       field: "email",
+    });
+    expect(EmptyError.type).toBe("Empty");
+    expect(EmptyError()).toEqual({
+      _tag: "Empty",
     });
 
     expect(AppError.NotFound.type).toBe("NotFound");
