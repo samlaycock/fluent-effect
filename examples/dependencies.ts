@@ -53,4 +53,4 @@ const dependencies = fx.dependencies(testUsers, consoleAudit);
 
 const app = fx.app(dependencies);
 
-export const main = app.run(loadUser("1"));
+export const main = app.run(loadUser("1")).finally(() => app.dispose());
