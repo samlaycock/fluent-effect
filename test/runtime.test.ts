@@ -439,6 +439,72 @@ describe("fx runtime behavior", () => {
     expect(releases).toBe(1);
   });
 
+  test("fx.app dispose is idempotent", async () => {
+    interface Connection {
+      readonly id: number;
+    }
+
+    const Connection = fx.dependency<Connection>("IdempotentConnection");
+    let releases = 0;
+    const app = fx.app(
+      Layer.scoped(
+        Connection,
+        Effect.acquireRelease(Effect.succeed({ id: 1 }), () =>
+          Effect.sync(() => {
+            releases += 1;
+          }),
+        ),
+      ),
+    );
+
+    const program = fx.task(function* () {
+      const connection = yield* fx.getDependency(Connection);
+      return connection.id;
+    });
+
+    expect(await app.run(program)).toBe(1);
+
+    await app.dispose();
+    await app.dispose();
+
+    expect(releases).toBe(1);
+  });
+
+  test("fx.app rejects use after dispose", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("DisposedEnv");
+    const app = fx.app(fx.provideDependency(Env, { value: "provided" }));
+    const program = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+    const expectedMessage = "Cannot use fx.app after dispose() has been called";
+    const expectDisposedRejection = async (promise: Promise<unknown>) => {
+      try {
+        await promise;
+        throw new Error("Expected fx.app usage to reject after disposal");
+      } catch (cause) {
+        expect(cause).toBeInstanceOf(Error);
+        expect((cause as Error).message).toBe(expectedMessage);
+      }
+    };
+
+    await app.dispose();
+
+    expect(() => app.provide(program)).toThrow(expectedMessage);
+    await expectDisposedRejection(app.run(program));
+    await expectDisposedRejection(app.runOrThrow(program));
+    await expectDisposedRejection(app.runResult(program));
+    expect(() => app.runSync(program)).toThrow(expectedMessage);
+    expect(() => app.runOrThrowSync(program)).toThrow(expectedMessage);
+    expect(() => app.runResultSync(program)).toThrow(expectedMessage);
+    await expectDisposedRejection(app.runExit(program));
+    expect(() => app.runExitSync(program)).toThrow(expectedMessage);
+  });
+
   test("fx.getDependency can retrieve several dependencies as a named object", async () => {
     interface Config {
       readonly prefix: string;

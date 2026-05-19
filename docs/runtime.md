@@ -79,6 +79,13 @@ connections, file handles, or HTTP clients with finalizers. The returned app
 also implements `[Symbol.asyncDispose]`, so runtimes that support explicit
 resource management can dispose it automatically.
 
+Disposal is idempotent: calling `app.dispose()` more than once returns the same
+shutdown work and releases scoped resources once. Once disposal starts, the app
+is permanently closed. Later calls to `app.provide`, `app.run`,
+`app.runOrThrow`, `app.runResult`, `app.runSync`, `app.runOrThrowSync`,
+`app.runResultSync`, `app.runExit`, or `app.runExitSync` fail with
+`Error("Cannot use fx.app after dispose() has been called")`.
+
 ## Synchronous Runners
 
 The `Sync` helpers are only for synchronously runnable tasks. They throw if the
