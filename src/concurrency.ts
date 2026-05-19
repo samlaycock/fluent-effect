@@ -162,19 +162,23 @@ export function eachBatch<I, A, E, R, C extends Concurrency>(
   f: (item: I, index: number) => Task<A, E, R>,
   options?: ExecutionOptions<C>,
 ) {
-  const batches = batchIterable(items, validateBatchSize(batchSize));
+  validateBatchSize(batchSize);
 
-  return Effect.map(
-    Effect.forEach(
-      batches,
-      (batch) =>
-        Effect.forEach(batch, ({ item, index }) => f(item, index), {
-          concurrency: normalizeConcurrency(options?.concurrency),
-        }),
-      { concurrency: 1 },
-    ),
-    (results) => results.flat(),
-  );
+  return Effect.suspend(() => {
+    const batches = batchIterable(items, batchSize);
+
+    return Effect.map(
+      Effect.forEach(
+        batches,
+        (batch) =>
+          Effect.forEach(batch, ({ item, index }) => f(item, index), {
+            concurrency: normalizeConcurrency(options?.concurrency),
+          }),
+        { concurrency: 1 },
+      ),
+      (results) => results.flat(),
+    );
+  });
 }
 
 /** Helper: map over a collection with bounded concurrency and discard results. */
