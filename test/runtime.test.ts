@@ -1169,6 +1169,48 @@ describe("fx runtime behavior", () => {
     expect(app.runResultSync(program)).toEqual({ ok: false, error });
   });
 
+  test("fx.runWithOrThrow unwraps one-shot dependency layer failures", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("Env");
+    const AppError = fx.errors<{ ConfigError: { message: string } }>();
+    const error = AppError.ConfigError({ message: "missing config" });
+
+    const program = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+
+    expect(
+      await fx.runWithOrThrow(program, fx.layer(Env, fx.fail(error))).then(
+        () => "unexpected success",
+        (cause) => cause,
+      ),
+    ).toBe(error);
+  });
+
+  test("fx.runWithResult returns one-shot dependency layer failures as results", async () => {
+    interface Env {
+      readonly value: string;
+    }
+
+    const Env = fx.dependency<Env>("Env");
+    const AppError = fx.errors<{ ConfigError: { message: string } }>();
+    const error = AppError.ConfigError({ message: "missing config" });
+
+    const program = fx.task(function* () {
+      const env = yield* fx.getDependency(Env);
+      return env.value;
+    });
+
+    expect(await fx.runWithResult(program, fx.layer(Env, fx.fail(error)))).toEqual({
+      ok: false,
+      error,
+    });
+  });
+
   test("fx.timeout fails slow tasks with Effect's timeout error", async () => {
     const result = await fx.runExit(fx.timeout(Effect.sleep("20 millis"), "1 millis"));
 

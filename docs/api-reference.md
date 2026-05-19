@@ -86,18 +86,20 @@ import { fx } from "fluent-effect";
 
 ## Runtime
 
-| Helper                             | Purpose                                                       |
-| ---------------------------------- | ------------------------------------------------------------- |
-| `fx.run`                           | Run a fully provided task as a promise.                       |
-| `fx.runOrThrow`                    | Run and throw the original typed failure value.               |
-| `fx.runResult`                     | Run and return a plain JavaScript `Result`.                   |
-| `fx.runExit`, `fx.runSafe`         | Run and return native Effect `Exit`.                          |
-| `fx.runWith`                       | Provide dependencies and run once.                            |
-| `fx.app`                           | Create a reusable dependency-backed runtime boundary.         |
-| `fx.runSync`                       | Run a synchronously runnable task.                            |
-| `fx.runOrThrowSync`                | Synchronously run and throw the original typed failure value. |
-| `fx.runResultSync`                 | Synchronously run and return a plain JavaScript `Result`.     |
-| `fx.runExitSync`, `fx.runSafeSync` | Synchronously run and return native Effect `Exit`.            |
+| Helper                             | Purpose                                                           |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| `fx.run`                           | Run a fully provided task as a promise.                           |
+| `fx.runOrThrow`                    | Run and throw the original typed failure value.                   |
+| `fx.runResult`                     | Run and return a plain JavaScript `Result`.                       |
+| `fx.runExit`, `fx.runSafe`         | Run and return native Effect `Exit`.                              |
+| `fx.runWith`                       | Provide dependencies and run once.                                |
+| `fx.runWithOrThrow`                | Provide dependencies once and throw original typed failures.      |
+| `fx.runWithResult`                 | Provide dependencies once and return a plain JavaScript `Result`. |
+| `fx.app`                           | Create a reusable dependency-backed runtime boundary.             |
+| `fx.runSync`                       | Run a synchronously runnable task.                                |
+| `fx.runOrThrowSync`                | Synchronously run and throw the original typed failure value.     |
+| `fx.runResultSync`                 | Synchronously run and return a plain JavaScript `Result`.         |
+| `fx.runExitSync`, `fx.runSafeSync` | Synchronously run and return native Effect `Exit`.                |
 
 ## Public Types
 

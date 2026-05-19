@@ -471,6 +471,8 @@ type _dependencies_live_context = Expect<
 const withLiveDependencies = fx.withDependencies(getUserFromDependencies, liveDependencies);
 const withLiveDependencyOverload = fx.withDependency(getUserFromDependencies, liveDependencies);
 const runWithLiveDependencies = fx.runWith(getUserFromDependencies, liveDependencies);
+const runWithOrThrowLiveDependencies = fx.runWithOrThrow(getUserFromDependencies, liveDependencies);
+const runWithResultLiveDependencies = fx.runWithResult(getUserFromDependencies, liveDependencies);
 const app = fx.app(liveDependencies);
 const appProvided = app.provide(getUserFromDependencies);
 const appRun = app.run(getUserFromDependencies);
@@ -491,6 +493,15 @@ type _app_provided_result = Expect<Equal<TaskResult<typeof appProvided>, User>>;
 type _app_provided_error = Expect<Equal<TaskError<typeof appProvided>, NotFound>>;
 type _app_provided_deps = Expect<Equal<TaskDeps<typeof appProvided>, never>>;
 type _run_with_result = Expect<Equal<Awaited<typeof runWithLiveDependencies>, User>>;
+type _run_with_or_throw_result = Expect<
+  Equal<Awaited<typeof runWithOrThrowLiveDependencies>, User>
+>;
+type _run_with_result_result = Expect<
+  Equal<
+    Awaited<typeof runWithResultLiveDependencies>,
+    import("../src/index").Result<User, NotFound>
+  >
+>;
 type _app_run_result = Expect<Equal<Awaited<typeof appRun>, User>>;
 
 interface DatabaseConfig {
