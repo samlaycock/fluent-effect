@@ -1,4 +1,4 @@
-import { Duration, Effect, Schedule } from "effect";
+import { Duration, Effect, Option, Schedule } from "effect";
 
 import type { Task } from "./types.js";
 
@@ -291,5 +291,7 @@ export const timeoutFail = <A, E, R, E1>(
 ): Task<A, E | E1, R> => timeout(self, duration, onTimeout);
 
 /** Helper: add a timeout that returns None when the timeout wins. */
-export const timeoutOption = <A, E, R>(self: Task<A, E, R>, duration: Duration.DurationInput) =>
-  Effect.timeoutOption(self, duration);
+export const timeoutOption = <A, E, R>(
+  self: Task<A, E, R>,
+  duration: Duration.DurationInput,
+): Task<Option.Option<A>, E, R> => Effect.timeoutOption(self, duration);
