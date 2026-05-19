@@ -405,6 +405,13 @@ describe("fx runtime behavior", () => {
     expect(state.maxActive).toBe(2);
   });
 
+  test("fx.eachBatch can rerun the same task", async () => {
+    const task = fx.eachBatch([1, 2, 3], 2, (n, index) => fx.succeed(`${index}:${n}`));
+
+    expect(await fx.run(task)).toEqual(["0:1", "1:2", "2:3"]);
+    expect(await fx.run(task)).toEqual(["0:1", "1:2", "2:3"]);
+  });
+
   test("fx.eachBatch rejects invalid batch sizes", () => {
     const invalidBatchSizes = [0, -1, Number.NaN, 1.5];
 
