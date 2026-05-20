@@ -2,6 +2,17 @@
 
 The package exposes one house API entrypoint and one native Effect passthrough.
 
+## Compatibility Matrix
+
+| Area                   | Support                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package manager        | Bun is the supported package manager for this repository. Consumers can install with `bun add fluent-effect effect`.                                          |
+| Effect peer dependency | Consumers must install `effect` alongside `fluent-effect`. The package declares `effect` as `^3.21.0` and tests against the repository-pinned Effect version. |
+| TypeScript             | TypeScript 5 is the supported compiler line for local type checking and generated declarations.                                                               |
+| Root export            | `fluent-effect` provides ESM, CommonJS, and TypeScript declaration targets.                                                                                   |
+| Native Effect export   | `fluent-effect/effect` provides ESM, CommonJS, and TypeScript declaration targets and re-exports native `effect`.                                             |
+| Runtime assumptions    | Development, tests, packaging, and examples are Bun-based. Package smoke tests verify both entrypoints from ESM and CommonJS consumers.                       |
+
 ## `fluent-effect`
 
 Import `fx` and public helper types from the package root.
