@@ -23,3 +23,6 @@ jobs:
 
       - name: Run test suite
         run: bun test
+
+      - name: Run package smoke test
+        run: bun run test:package
