@@ -30,6 +30,7 @@
   },
   "scripts": {
     "test": "bun test",
+    "test:package": "bun test ./test/package-smoke.ts",
     "examples:smoke": "bun test test/examples-smoke.test.ts",
     "lint": "oxlint . --type-aware",
     "lint:fix": "oxlint . --type-aware --fix",

@@ -43,3 +43,14 @@ ESM, CommonJS, and TypeScript declarations via `package.json` exports:
 Application code should prefer `fluent-effect` for the documented house
 semantics. Use `fluent-effect/effect` as an escape hatch when native Effect
 surface area is required.
+
+## Verification
+
+Default local tests run fast package metadata checks with `bun test`. Full
+packaging verification, including building a temporary package workspace,
+packing it, installing it into a temporary consumer, and checking ESM and
+CommonJS resolution, is available with:
+
+```sh
+bun run test:package
+```
