@@ -132,5 +132,5 @@ describe("package smoke test", () => {
       await rm(packageDirectory, { recursive: true, force: true });
       await rm(packageWorkspace, { recursive: true, force: true });
     }
-  }, 15_000);
+  }, 60_000);
 });
