@@ -19,7 +19,7 @@ application and this package share the same Effect runtime.
 
 | Area                   | Support                                                                                                                                                      |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Package manager        | Bun. Install with `bun add fluent-effect effect`.                                                                                                            |
+| Package manager        | Bun is the supported package manager for this repository. Consumers can install with `bun add fluent-effect effect`.                                         |
 | Effect peer dependency | `effect` must be installed by the consuming application. This package declares `effect` as `^3.21.0` and tests against the repository-pinned Effect version. |
 | TypeScript             | TypeScript 5 is the supported compiler line for local type checking and generated declarations.                                                              |
 | Module formats         | The package root is published as ESM, CommonJS, and TypeScript declarations.                                                                                 |
