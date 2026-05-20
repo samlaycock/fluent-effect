@@ -15,6 +15,17 @@ bun add fluent-effect effect
 `effect` is a peer dependency. Install it alongside `fluent-effect` so your
 application and this package share the same Effect runtime.
 
+## Compatibility
+
+| Area                   | Support                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Package manager        | Bun. Install with `bun add fluent-effect effect`.                                                                                                            |
+| Effect peer dependency | `effect` must be installed by the consuming application. This package declares `effect` as `^3.21.0` and tests against the repository-pinned Effect version. |
+| TypeScript             | TypeScript 5 is the supported compiler line for local type checking and generated declarations.                                                              |
+| Module formats         | The package root is published as ESM, CommonJS, and TypeScript declarations.                                                                                 |
+| Native Effect export   | `fluent-effect/effect` is published with the same ESM, CommonJS, and declaration support as the package root.                                                |
+| Runtime assumptions    | Development, tests, packaging, and examples are Bun-based. Package smoke tests verify ESM and CommonJS consumers can resolve both entrypoints.               |
+
 ## Quick Start
 
 ```ts
