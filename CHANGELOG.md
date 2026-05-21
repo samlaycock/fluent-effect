@@ -1,5 +1,23 @@
 # fluent-effect
 
+## 0.3.0
+
+### Minor Changes
+
+- 3459176: Add `fx.eachBatch` for sequential batch traversal with per-batch concurrency options and synchronous batch-size validation.
+- 7165fbe: Add `fx.runWithOrThrow` and `fx.runWithResult` one-shot dependency runtime helpers that unwrap dependency layer acquisition failures consistently with `fx.app` boundary helpers.
+- 9b724e5: Add `fx.acquireRelease`, `fx.scoped`, and `fx.layerScoped` for ergonomic scoped resource workflows.
+- ee7b163: Add `fx.timeoutOption` for timeout-as-value workflows.
+
+### Patch Changes
+
+- 0096311: Define `fx.app` lifecycle behavior after disposal, making disposal idempotent and failing later app usage with a clear error.
+- 3a8de6d: Align `fx.error` empty-field constructors with `fx.errors` so `{}` field shapes can be called without an argument.
+- 0005cd2: Reduce allocations in `fx.getDependencies` by building dependency lookup results in a single pass.
+- 37123f2: Split the package smoke test into a dedicated `test:package` script while keeping fast package export metadata checks in the default test suite.
+- 4661fc3: Reject `fx.retry` options that provide `factor` without `backoff`, preventing factor-only retry policies from silently retrying zero times.
+- 75cd538: Document package manager, Effect peer dependency, TypeScript, module format, and runtime support expectations.
+
 ## 0.2.0
 
 ### Minor Changes
